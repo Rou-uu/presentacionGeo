@@ -217,6 +217,11 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Manim / manim-slides generated artifacts
+media/
+slides/files/
+slides/*.json
+
 # macOS
 .DS_Store
 .AppleDouble
