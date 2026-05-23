@@ -54,6 +54,1029 @@ def title_slide(scene, ctx):
     scene.play(FadeIn(corner_left), FadeIn(corner_right))
     return {"title": title, "subtitle": subtitle, "corner_left": corner_left, "corner_right": corner_right}
 
+@app.function
+def steiner_slide(scene, ctx):
+    import numpy as np
+
+    scene.play(
+        FadeOut(ctx["title"]),
+        FadeOut(ctx["subtitle"]),
+        FadeOut(ctx["corner_left"]),
+        FadeOut(ctx["corner_right"])
+    )
+
+    heading = Text("Puntos Steiner", font_size=72, color=WHITE)
+    heading.move_to(ORIGIN)
+    scene.play(Write(heading))
+    scene.next_slide()
+
+    heading_small = Text("Puntos Steiner", font_size=28, color=WHITE)
+    heading_small.to_corner(UP + LEFT, buff=0.4)
+    scene.play(Transform(heading, heading_small))
+
+    points = [
+        np.array([0, 3, 0]),    # A  0
+        np.array([0, 1, 0]),    # B  1
+        np.array([1, 0, 0]),    # C  2
+        np.array([3, 0, 0]),    # D  3
+        np.array([4, 1, 0]),    # E  4
+        np.array([5, 0, 0]),    # F  5
+        np.array([7, 0, 0]),    # G  6
+        np.array([8, 1, 0]),    # H  7
+        np.array([9, 0, 0]),    # I  8
+        np.array([11, 0, 0]),   # J  9
+        np.array([12, 1, 0]),   # K  10
+        np.array([12, 3, 0]),   # L  11
+        np.array([11, 4, 0]),   # M  12
+        np.array([9, 4, 0]),    # N  13
+        np.array([8, 3, 0]),    # O  14
+        np.array([7, 4, 0]),    # P  15
+        np.array([5, 4, 0]),    # Q  16
+        np.array([4, 3, 0]),    # R  17
+        np.array([3, 4, 0]),    # S  18
+        np.array([1, 4, 0]),    # T  19
+    ]
+
+    polygon = Polygon(*points, color=WHITE, stroke_width=3)
+    polygon.move_to(ORIGIN)
+    scene.play(Create(polygon))
+    scene.next_slide()
+
+    verts = polygon.get_vertices()
+
+    red_region = Polygon(
+        verts[0], verts[1], verts[2], verts[3], verts[4], verts[17], verts[18], verts[19],
+        color=RED, stroke_width=2
+    ).set_fill(RED, opacity=0.5)
+
+    blue_region = Polygon(
+        verts[4], verts[5], verts[6], verts[7], verts[14], verts[15], verts[16], verts[17],
+        color=BLUE, stroke_width=2
+    ).set_fill(BLUE, opacity=0.5)
+
+    yellow_region = Polygon(
+        verts[7], verts[8], verts[9], verts[10], verts[11], verts[12], verts[13], verts[14],
+        color=YELLOW, stroke_width=2
+    ).set_fill(YELLOW, opacity=0.5)
+
+    label = Text("Regiones convexas: k = 3", font_size=24, color=WHITE)
+    label.to_corner(DOWN + LEFT, buff=0.5)
+
+    scene.play(FadeIn(red_region), FadeIn(blue_region), FadeIn(yellow_region))
+    scene.play(FadeIn(label))
+    scene.next_slide()
+
+    # W X Y — puntos intermedios (bbox centro (6,2), sin escala adicional)
+    bbox_center = np.array([6.0, 2.0, 0.0])
+    w_pos = np.array([2.0,  2.0,  0.0]) - bbox_center   # (-4,  0,   0)
+    wx_pos = np.array([6.0,  1.5,  0.0]) - bbox_center  # ( 0, -0.5, 0)
+    wy_pos = np.array([10.0, 2.0,  0.0]) - bbox_center  # ( 4,  0,   0)
+
+    w_dot  = Dot(w_pos,  radius=0.13, color=RED).set_z_index(3)
+    wx_dot = Dot(wx_pos, radius=0.13, color=WHITE).set_z_index(3)
+    wy_dot = Dot(wy_pos, radius=0.13, color=WHITE).set_z_index(3)
+    wx_edge = DashedLine(w_pos,  wx_pos, color=WHITE, stroke_width=2, dash_length=0.1)
+    wy_edge = DashedLine(wx_pos, wy_pos, color=WHITE, stroke_width=2, dash_length=0.1)
+
+    scene.play(FadeIn(w_dot), FadeIn(wx_dot), FadeIn(wy_dot), Create(wx_edge), Create(wy_edge))
+    scene.next_slide()
+
+    scene.play(FadeOut(w_dot), FadeOut(wx_dot), FadeOut(wy_dot), FadeOut(wx_edge), FadeOut(wy_edge))
+    scene.next_slide()
+
+    # U y V están en coordenadas del polígono original; el bbox era (0..12, 0..4),
+    # centro (6, 2), que move_to(ORIGIN) desplazó a (0,0).
+    u_pos = np.array([4.0, 2.0, 0.0]) - bbox_center   # (-2, 0, 0)
+    v_pos = np.array([8.0, 2.0, 0.0]) - bbox_center   # ( 2, 0, 0)
+
+    u_dot = Dot(u_pos, radius=0.13, color=WHITE).set_z_index(3)
+    v_dot = Dot(v_pos, radius=0.13, color=WHITE).set_z_index(3)
+    u_label = Text("", font_size=22, color=WHITE).next_to(u_dot, DOWN, buff=0.15)
+    v_label = Text("", font_size=22, color=WHITE).next_to(v_dot, DOWN, buff=0.15)
+
+    uv_rect = RoundedRectangle(corner_radius=0.6, width=5.2, height=1.4, color=WHITE, stroke_width=2)
+    uv_rect.move_to(ORIGIN)
+
+    scene.play(FadeIn(u_dot), FadeIn(v_dot), Write(u_label), Write(v_label))
+    scene.next_slide()
+
+    # Aristas desde U → S T A B C D
+    edges_u_left = [
+        DashedLine(u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+        for i in [18, 19, 0, 1, 2, 3]
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in edges_u_left], lag_ratio=0.25))
+    scene.next_slide()
+
+    # Aristas desde U → F G H V O P Q
+    edges_u_mid = [
+        DashedLine(u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
+        for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in edges_u_mid], lag_ratio=0.25))
+    scene.next_slide()
+
+    # Aristas desde V → I J K L M N
+    edges_v_right = [
+        DashedLine(v_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+        for i in [8, 9, 10, 11, 12, 13]
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in edges_v_right], lag_ratio=0.25))
+
+    steiner_label = Text("Puntos Steiner: k-1=2", font_size=24, color=WHITE)
+    steiner_label.to_corner(DOWN + RIGHT, buff=0.5)
+    scene.play(FadeIn(steiner_label), Create(uv_rect))
+    scene.next_slide()
+
+    scene.play(FadeOut(uv_rect))
+
+    new_u_pos = verts[17]
+    new_edges_u_left = [
+        DashedLine(new_u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+        for i in [18, 19, 0, 1, 2, 3]
+    ]
+    new_edges_u_mid = [
+        DashedLine(new_u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
+        for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
+    ]
+
+    new_steiner = Text("Puntos Steiner: k-2=1", font_size=24, color=WHITE)
+    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+    scene.play(
+        u_dot.animate.move_to(new_u_pos),
+        Transform(steiner_label, new_steiner),
+        *[Transform(old, new) for old, new in zip(edges_u_left, new_edges_u_left)],
+        *[Transform(old, new) for old, new in zip(edges_u_mid, new_edges_u_mid)],
+    )
+    scene.next_slide()
+
+    return {
+        "heading": heading,
+        "polygon": polygon,
+        "red_region": red_region,
+        "blue_region": blue_region,
+        "yellow_region": yellow_region,
+        "label": label,
+        "u_dot": u_dot, "v_dot": v_dot,
+        "u_label": u_label, "v_label": v_label,
+        "edges_u_left": edges_u_left,
+        "edges_u_mid": edges_u_mid,
+        "edges_v_right": edges_v_right,
+        "steiner_label": steiner_label,
+    }
+
+
+@app.function
+def steiner_slide_2(scene, ctx):
+    import numpy as np
+
+    scene.play(
+        FadeOut(ctx["polygon"]),
+        FadeOut(ctx["red_region"]),
+        FadeOut(ctx["blue_region"]),
+        FadeOut(ctx["yellow_region"]),
+        FadeOut(ctx["u_dot"]),
+        FadeOut(ctx["v_dot"]),
+        FadeOut(ctx["u_label"]),
+        FadeOut(ctx["v_label"]),
+        *[FadeOut(e) for e in ctx["edges_u_left"]],
+        *[FadeOut(e) for e in ctx["edges_u_mid"]],
+        *[FadeOut(e) for e in ctx["edges_v_right"]],
+    )
+
+    points = [
+        np.array([0,     0,    0]),   # A  0
+        np.array([0,     7,    0]),   # B  1
+        np.array([2,     7,    0]),   # C  2
+        np.array([2,     2,    0]),   # D  3
+        np.array([4,     2,    0]),   # E  4
+        np.array([4,     7,    0]),   # F  5
+        np.array([6,     7,    0]),   # G  6
+        np.array([6,     2,    0]),   # H  7
+        np.array([8,     2,    0]),   # I  8
+        np.array([8,     7,    0]),   # J  9
+        np.array([10,    7,    0]),   # K  10
+        np.array([10,    2,    0]),   # L  11
+        np.array([12,    2,    0]),   # M  12
+        np.array([12,    7,    0]),   # N  13
+        np.array([14,    7,    0]),   # O  14
+        np.array([14,    2,    0]),   # P  15
+        np.array([16,    2,    0]),   # Q  16
+        np.array([16,    7,    0]),   # R  17
+        np.array([18,    7,    0]),   # S  18
+        np.array([18,    0,    0]),   # T  19
+    ]
+
+    polygon2 = Polygon(*points, color=WHITE, stroke_width=3)
+    polygon2.move_to(ORIGIN)
+    polygon2.scale(0.65)
+    scene.play(Create(polygon2))
+    scene.next_slide()
+
+    v = polygon2.get_vertices()
+
+    red_region = Polygon(
+        v[0], v[1], v[2], v[3],
+        color=RED, stroke_width=2,
+    ).set_fill(RED, opacity=0.5)
+
+    gold_region = Polygon(
+        v[0], v[3], v[4], v[7], v[8], v[11], v[12], v[15], v[16], v[19],
+        color=GOLD, stroke_width=2,
+    ).set_fill(GOLD, opacity=0.5)
+
+    yellow_region = Polygon(
+        v[4], v[5], v[6], v[7],
+        color=YELLOW, stroke_width=2,
+    ).set_fill(YELLOW, opacity=0.5)
+
+    green_region = Polygon(
+        v[8], v[9], v[10], v[11],
+        color=GREEN, stroke_width=2,
+    ).set_fill(GREEN, opacity=0.5)
+
+    teal_region = Polygon(
+        v[12], v[13], v[14], v[15],
+        color=TEAL, stroke_width=2,
+    ).set_fill(TEAL, opacity=0.5)
+
+    blue_region = Polygon(
+        v[16], v[17], v[18], v[19],
+        color=BLUE, stroke_width=2,
+    ).set_fill(BLUE, opacity=0.5)
+
+    scene.play(
+        FadeIn(red_region), FadeIn(gold_region), FadeIn(yellow_region),
+        FadeIn(green_region), FadeIn(teal_region), FadeIn(blue_region),
+    )
+
+    new_label = Text("Regiones convexas: k = 6", font_size=24, color=WHITE)
+    new_label.to_corner(DOWN + LEFT, buff=0.5)
+    scene.play(Transform(ctx["label"], new_label))
+    scene.next_slide()
+
+    # Posiciones de los puntos Steiner en coordenadas de escena
+    # bbox original: (0..18, 0..7) → centro (9, 3.5); luego scale 0.65
+    def sc(px, py):
+        return (np.array([px, py, 0.0]) - np.array([9.0, 3.5, 0.0])) * 0.65
+
+    u_pos = sc(1,  1)
+    v_pos = sc(5,  2)
+    x_pos = sc(9,  2)
+    y_pos = sc(13, 2)
+    z_pos = sc(17, 1)
+
+    u_dot = Dot(u_pos, radius=0.10, color=WHITE).set_z_index(3)
+    v_dot = Dot(v_pos, radius=0.10, color=WHITE).set_z_index(3)
+    x_dot = Dot(x_pos, radius=0.10, color=WHITE).set_z_index(3)
+    y_dot = Dot(y_pos, radius=0.10, color=WHITE).set_z_index(3)
+    z_dot = Dot(z_pos, radius=0.10, color=WHITE).set_z_index(3)
+
+    new_steiner = Text("Puntos Steiner: k-1=5", font_size=24, color=WHITE)
+    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+
+    scene.play(
+        FadeIn(u_dot), FadeIn(v_dot), FadeIn(x_dot), FadeIn(y_dot), FadeIn(z_dot),
+        Transform(ctx["steiner_label"], new_steiner),
+    )
+    scene.next_slide()
+
+    def edge(a, b):
+        return DashedLine(a, b, color=WHITE, stroke_width=1.5, dash_length=0.1)
+
+    # Batch 1: aristas "locales" de cada punto Steiner a sus dos vecinos de región
+    batch1 = [
+        edge(u_pos, v[0]),   # U→A
+        edge(u_pos, v[3]),   # U→D
+        edge(v_pos, v[4]),   # V→E
+        edge(v_pos, v[7]),   # V→H
+        edge(x_pos, v[8]),   # X→I
+        edge(x_pos, v[11]),  # X→L
+        edge(y_pos, v[12]),  # Y→M
+        edge(y_pos, v[15]),  # Y→P
+        edge(z_pos, v[16]),  # Z→Q
+        edge(z_pos, v[19]),  # Z→T
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in batch1], lag_ratio=0.15))
+    scene.next_slide()
+
+    # Batch 2: aristas largas desde U
+    batch2 = [
+        edge(u_pos, v[1]),   # U→B
+        edge(u_pos, v[2]),   # U→C
+        edge(u_pos, v[4]),   # U→E
+        edge(u_pos, v_pos),  # U→V
+        edge(u_pos, v[7]),   # U→H
+        edge(u_pos, v[8]),   # U→I
+        edge(u_pos, x_pos),  # U→X
+        edge(u_pos, v[11]),  # U→L
+        edge(u_pos, v[12]),  # U→M
+        edge(u_pos, y_pos),  # U→Y
+        edge(u_pos, v[15]),  # U→P
+        edge(u_pos, v[16]),  # U→Q
+        edge(u_pos, z_pos),  # U→Z
+        edge(u_pos, v[19]),  # U→T
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in batch2], lag_ratio=0.1))
+    scene.next_slide()
+
+    # Batch 3: V→F, V→G
+    batch3 = [edge(v_pos, v[5]), edge(v_pos, v[6])]
+    scene.play(LaggedStart(*[Create(e) for e in batch3], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Batch 4: X→J, X→K
+    batch4 = [edge(x_pos, v[9]), edge(x_pos, v[10])]
+    scene.play(LaggedStart(*[Create(e) for e in batch4], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Batch 5: Y→N, Y→O
+    batch5 = [edge(y_pos, v[13]), edge(y_pos, v[14])]
+    scene.play(LaggedStart(*[Create(e) for e in batch5], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Batch 6: Z→R, Z→S
+    batch6 = [edge(z_pos, v[17]), edge(z_pos, v[18])]
+    scene.play(LaggedStart(*[Create(e) for e in batch6], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Remover todas las aristas punteadas
+    all_edges = batch1 + batch2 + batch3 + batch4 + batch5 + batch6
+    scene.play(*[FadeOut(e) for e in all_edges])
+    scene.next_slide()
+
+    # Bajar V, X, Y una unidad en coords originales → 0.75 en coords de escena
+    new_v_pos = sc(5,  1)
+    new_x_pos = sc(9,  1)
+    new_y_pos = sc(13, 1)
+
+    scene.play(
+        v_dot.animate.shift(DOWN * 0.75),
+        x_dot.animate.shift(DOWN * 0.75),
+        y_dot.animate.shift(DOWN * 0.75),
+    )
+    scene.next_slide()
+
+    # Nuevas aristas en un solo paso
+    new_edges = [
+        # U → A B C D E V
+        edge(u_pos,    v[0]),      edge(u_pos,    v[1]),
+        edge(u_pos,    v[2]),      edge(u_pos,    v[3]),
+        edge(u_pos,    v[4]),      edge(u_pos,    new_v_pos),
+        # V → A E F G H I X
+        edge(new_v_pos, v[0]),     edge(new_v_pos, v[4]),
+        edge(new_v_pos, v[5]),     edge(new_v_pos, v[6]),
+        edge(new_v_pos, v[7]),     edge(new_v_pos, v[8]),
+        edge(new_v_pos, new_x_pos),
+        # X → A I J K L M Y T
+        edge(new_x_pos, v[0]),     edge(new_x_pos, v[8]),
+        edge(new_x_pos, v[9]),     edge(new_x_pos, v[10]),
+        edge(new_x_pos, v[11]),    edge(new_x_pos, v[12]),
+        edge(new_x_pos, new_y_pos), edge(new_x_pos, v[19]),
+        # Y → M N O P Q Z T
+        edge(new_y_pos, v[12]),    edge(new_y_pos, v[13]),
+        edge(new_y_pos, v[14]),    edge(new_y_pos, v[15]),
+        edge(new_y_pos, v[16]),    edge(new_y_pos, z_pos),
+        edge(new_y_pos, v[19]),
+        # Z → Q R S T
+        edge(z_pos, v[16]),        edge(z_pos, v[17]),
+        edge(z_pos, v[18]),        edge(z_pos, v[19]),
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in new_edges], lag_ratio=0.04))
+    scene.next_slide()
+
+    return {
+        "heading":       ctx["heading"],
+        "label":         ctx["label"],
+        "steiner_label": ctx["steiner_label"],
+        "polygon":       polygon2,
+        "regions":       [red_region, gold_region, yellow_region, green_region, teal_region, blue_region],
+        "steiner_dots":  [u_dot, v_dot, x_dot, y_dot, z_dot],
+        "steiner_edges": new_edges,
+    }
+
+
+@app.function
+def steiner_slide_3(scene, ctx):
+    import numpy as np
+
+    new_label = Text("Regiones convexas: k = 5", font_size=24, color=WHITE)
+    new_label.to_corner(DOWN + LEFT, buff=0.5)
+    new_steiner = Text("Puntos Steiner: k=5", font_size=24, color=WHITE)
+    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+
+    scene.play(
+        FadeOut(ctx["polygon"]),
+        *[FadeOut(r) for r in ctx["regions"]],
+        *[FadeOut(d) for d in ctx["steiner_dots"]],
+        *[FadeOut(e) for e in ctx["steiner_edges"]],
+        Transform(ctx["label"], new_label),
+        Transform(ctx["steiner_label"], new_steiner),
+    )
+
+    A = np.array([0, 3, 0])
+    B = np.array([2, 0, 0])
+    C = np.array([2, 4, 0])
+    D = np.array([5, 4, 0])
+    E = np.array([5, 2, 0])
+    F = np.array([6, 0, 0])
+    G = np.array([8, 3, 0])
+
+    # Polygon outline: A→B→F→G→E→D→C→A
+    polygon = Polygon(A, B, F, G, E, D, C, color=WHITE, stroke_width=3)
+    polygon.move_to(ORIGIN)
+    polygon.scale(1.3)
+    scene.play(Create(polygon))
+    scene.next_slide()
+
+    # Vertices in order: A=0, B=1, F=2, G=3, E=4, D=5, C=6
+    v = polygon.get_vertices()
+
+    def dashed(a, b):
+        return DashedLine(a, b, color=YELLOW, stroke_width=2, dash_length=0.15)
+
+    dashed_edges = [
+        dashed(v[1], v[6]),  # B → C
+        dashed(v[6], v[4]),  # C → E
+        dashed(v[1], v[4]),  # B → E
+        dashed(v[4], v[2]),  # E → F
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in dashed_edges], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Scale polygon and dashed edges by 0.65
+    group = VGroup(polygon, *dashed_edges)
+    scene.play(group.animate.scale(0.65))
+    scene.next_slide()
+
+    # After full scale (1.3 * 0.65 = 0.845), original bbox center was (4, 2)
+    def sc(px, py):
+        return np.array([(px - 4.0) * 0.845, (py - 2.0) * 0.845, 0.0])
+
+    # Incenter and inradius in original polygon coordinates
+    def incenter_inradius(P1, P2, P3):
+        a = np.linalg.norm(P2 - P3)
+        b = np.linalg.norm(P1 - P3)
+        c = np.linalg.norm(P1 - P2)
+        I = (a * P1 + b * P2 + c * P3) / (a + b + c)
+        area = 0.5 * abs((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0]))
+        r = area / ((a + b + c) / 2)
+        return I[:2], r
+
+    ic_xy, ic_r = incenter_inradius(A, C, B)
+    id_xy, id_r = incenter_inradius(C, B, E)
+    ie_xy, ie_r = incenter_inradius(D, C, E)
+    ir_xy, ir_r = incenter_inradius(E, F, G)
+    is_xy, is_r = incenter_inradius(E, B, F)
+
+    c_center = sc(ic_xy[0], ic_xy[1])
+    d_center = sc(id_xy[0], id_xy[1])
+    e_center = sc(ie_xy[0], ie_xy[1])
+    r_center = sc(ir_xy[0], ir_xy[1])
+    s_center = sc(is_xy[0], is_xy[1])
+
+    circle_c = Circle(radius=ic_r * 0.845, color=BLUE, stroke_width=2).move_to(c_center)
+    dot_c = Dot(c_center, radius=0.08, color=BLUE).set_z_index(3)
+
+    circle_d = Circle(radius=id_r * 0.845, color=RED, stroke_width=2).move_to(d_center)
+    dot_d = Dot(d_center, radius=0.08, color=RED).set_z_index(3)
+
+    circle_e = Circle(radius=ie_r * 0.845, color=GREEN, stroke_width=2).move_to(e_center)
+    dot_e = Dot(e_center, radius=0.08, color=GREEN).set_z_index(3)
+
+    circle_r = Circle(radius=ir_r * 0.845, color=TEAL, stroke_width=2).move_to(r_center)
+    dot_r = Dot(r_center, radius=0.08, color=TEAL).set_z_index(3)
+
+    circle_s = Circle(radius=is_r * 0.845, color=GOLD, stroke_width=2).move_to(s_center)
+    dot_s = Dot(s_center, radius=0.08, color=GOLD).set_z_index(3)
+
+    scene.play(
+        LaggedStart(
+            Create(circle_c), FadeIn(dot_c),
+            Create(circle_d), FadeIn(dot_d),
+            Create(circle_e), FadeIn(dot_e),
+            Create(circle_r), FadeIn(dot_r),
+            Create(circle_s), FadeIn(dot_s),
+            lag_ratio=0.4,
+        )
+    )
+    scene.next_slide()
+
+    # Fade out circles, keep center dots
+    scene.play(
+        FadeOut(circle_c), FadeOut(circle_d), FadeOut(circle_e),
+        FadeOut(circle_r), FadeOut(circle_s),
+    )
+    scene.next_slide()
+
+    # Vertex positions in scene coords after full scale
+    A_pos = sc(0, 3)
+    B_pos = sc(2, 0)
+    C_pos = sc(2, 4)
+    D_pos = sc(5, 4)
+    E_pos = sc(5, 2)
+    F_pos = sc(6, 0)
+    G_pos = sc(8, 3)
+
+    def bdash(a, b):
+        return DashedLine(a, b, color=BLUE, stroke_width=1.5, dash_length=0.12)
+
+    center_edges = [
+        bdash(c_center, A_pos), bdash(c_center, B_pos), bdash(c_center, C_pos),
+        bdash(d_center, C_pos), bdash(d_center, B_pos), bdash(d_center, E_pos),
+        bdash(e_center, D_pos), bdash(e_center, C_pos), bdash(e_center, E_pos),
+        bdash(r_center, E_pos), bdash(r_center, F_pos), bdash(r_center, G_pos),
+        bdash(s_center, F_pos), bdash(s_center, B_pos), bdash(s_center, E_pos),
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in center_edges], lag_ratio=0.15))
+    scene.next_slide()
+
+    # Red dashed edges between circumcenters
+    def rdash(a, b):
+        return DashedLine(a, b, color=RED, stroke_width=2, dash_length=0.12)
+
+    red_edges = [
+        rdash(c_center, d_center),
+        rdash(d_center, e_center),
+        rdash(d_center, s_center),
+        rdash(s_center, r_center),
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in red_edges], lag_ratio=0.3))
+    scene.next_slide()
+
+    # Fade out yellow dashed edges
+    scene.play(*[FadeOut(e) for e in dashed_edges])
+    scene.next_slide()
+
+    return {
+        "heading":       ctx["heading"],
+        "label":         ctx["label"],
+        "steiner_label": ctx["steiner_label"],
+        "polygon":       polygon,
+        "dashed_edges":  dashed_edges,
+        "circles":       [circle_c, circle_d, circle_e, circle_r, circle_s],
+        "circle_dots":   [dot_c, dot_d, dot_e, dot_r, dot_s],
+        "center_edges":  center_edges,
+        "red_edges":     red_edges,
+    }
+
+
+@app.function
+def steiner_slide_4(scene, ctx):
+    import numpy as np
+
+    scene.play(
+        FadeOut(ctx["polygon"]),
+        FadeOut(ctx["label"]),
+        FadeOut(ctx["steiner_label"]),
+        *[FadeOut(d) for d in ctx["circle_dots"]],
+        *[FadeOut(e) for e in ctx["center_edges"]],
+        *[FadeOut(e) for e in ctx["red_edges"]],
+    )
+
+    A = np.array([0,  0, 0])
+    B = np.array([0,  2, 0])
+    C = np.array([4,  4, 0])
+    D = np.array([8,  2, 0])
+    E = np.array([12, 4, 0])
+    F = np.array([16, 2, 0])
+    G = np.array([16, 0, 0])
+    H = np.array([12, 2, 0])
+    I = np.array([8,  0, 0])
+    J = np.array([4,  2, 0])
+
+    # bbox: x 0..16 center 8, y 0..4 center 2; scale 0.7
+    def sc(px, py):
+        return np.array([(px - 8.0) * 0.7, (py - 2.0) * 0.7, 0.0])
+
+    polygon = Polygon(A, B, C, D, E, F, G, H, I, J, color=WHITE, stroke_width=3)
+    polygon.move_to(ORIGIN)
+    polygon.scale(0.7)
+    scene.play(Create(polygon))
+    scene.next_slide()
+
+    # Order in get_vertices(): A=0 B=1 C=2 D=3 E=4 F=5 G=6 H=7 I=8 J=9
+    v = polygon.get_vertices()
+
+    region_abcj = Polygon(v[0], v[1], v[2], v[9], color=RED,    stroke_width=2).set_fill(RED,    opacity=0.5)
+    region_cdij = Polygon(v[2], v[3], v[8], v[9], color=BLUE,   stroke_width=2).set_fill(BLUE,   opacity=0.5)
+    region_dehi = Polygon(v[3], v[4], v[7], v[8], color=GREEN,  stroke_width=2).set_fill(GREEN,  opacity=0.5)
+    region_efgh = Polygon(v[4], v[5], v[6], v[7], color=YELLOW, stroke_width=2).set_fill(YELLOW, opacity=0.5)
+
+    scene.play(FadeIn(region_abcj), FadeIn(region_cdij), FadeIn(region_dehi), FadeIn(region_efgh))
+    scene.next_slide()
+
+    k_pos = sc(4,  3)
+    l_pos = sc(8,  1)
+    m_pos = sc(12, 3)
+
+    k_dot = Dot(k_pos, radius=0.1, color=WHITE).set_z_index(3)
+    l_dot = Dot(l_pos, radius=0.1, color=WHITE).set_z_index(3)
+    m_dot = Dot(m_pos, radius=0.1, color=WHITE).set_z_index(3)
+
+    scene.play(FadeIn(k_dot), FadeIn(l_dot), FadeIn(m_dot))
+    scene.next_slide()
+
+    A_pos = sc(0,  0)
+    B_pos = sc(0,  2)
+    D_pos = sc(8,  2)
+    E_pos = sc(12, 4)
+    F_pos = sc(16, 2)
+    G_pos = sc(16, 0)
+    H_pos = sc(12, 2)
+    I_pos = sc(8,  0)
+
+    def dash(a, b):
+        return DashedLine(a, b, color=WHITE, stroke_width=1.5, dash_length=0.1)
+
+    steiner_edges = [
+        dash(k_pos, B_pos),  # c:  K→B
+        dash(k_pos, A_pos),  # d:  K→A
+        dash(k_pos, D_pos),  # e:  K→D
+        dash(k_pos, l_pos),  # f1: K→L
+        dash(k_pos, I_pos),  # g1: K→I
+        dash(l_pos, E_pos),  # h1: L→E
+        dash(l_pos, m_pos),  # i1: L→M
+        dash(l_pos, H_pos),  # j1: L→H
+        dash(m_pos, G_pos),  # k1: M→G
+        dash(m_pos, F_pos),  # l1: M→F
+    ]
+    scene.play(LaggedStart(*[Create(e) for e in steiner_edges], lag_ratio=0.15))
+    scene.next_slide()
+
+    # Label "Triángulos = 16"
+    tri_label = Text("Triángulos = 16", font_size=24, color=WHITE)
+    tri_label.to_corner(DOWN + LEFT, buff=0.5)
+    scene.play(FadeIn(tri_label))
+    scene.next_slide()
+
+    # Move K to C = (4, 4) and update its incident edges
+    new_k_pos = sc(4, 4)
+    new_k_edges = [
+        dash(new_k_pos, B_pos),  # c:  K→B
+        dash(new_k_pos, A_pos),  # d:  K→A
+        dash(new_k_pos, D_pos),  # e:  K→D
+        dash(new_k_pos, l_pos),  # f1: K→L
+        dash(new_k_pos, I_pos),  # g1: K→I
+    ]
+    scene.play(
+        k_dot.animate.move_to(new_k_pos),
+        *[Transform(old, new) for old, new in zip(steiner_edges[:5], new_k_edges)],
+    )
+    scene.next_slide()
+
+    # Update label to "Triángulos = 14"
+    new_tri_label = Text("Triángulos = 14", font_size=24, color=WHITE)
+    new_tri_label.to_corner(DOWN + LEFT, buff=0.5)
+    scene.play(Transform(tri_label, new_tri_label))
+    scene.next_slide()
+
+    # Duplicate polygon+regions: shift originals up, fade in copy below
+    regions = [region_abcj, region_cdij, region_dehi, region_efgh]
+    copy_polygon = polygon.copy()
+    copy_regions = [r.copy() for r in regions]
+    shift_amount = 1.3
+
+    for obj in [copy_polygon] + copy_regions:
+        obj.shift(DOWN * shift_amount)
+
+    scene.play(
+        polygon.animate.shift(UP * shift_amount),
+        *[r.animate.shift(UP * shift_amount) for r in regions],
+        k_dot.animate.shift(UP * shift_amount),
+        l_dot.animate.shift(UP * shift_amount),
+        m_dot.animate.shift(UP * shift_amount),
+        *[e.animate.shift(UP * shift_amount) for e in steiner_edges],
+        *[FadeIn(obj) for obj in [copy_polygon] + copy_regions],
+    )
+    scene.next_slide()
+
+    # Edges on bottom polygon: BJ CJ DJ DI DH HE HF
+    cv = copy_polygon.get_vertices()
+    # Order: A=0 B=1 C=2 D=3 E=4 F=5 G=6 H=7 I=8 J=9
+    copy_edges = [
+        dash(cv[1], cv[9]),  # B-J
+        dash(cv[2], cv[9]),  # C-J
+        dash(cv[3], cv[9]),  # D-J
+        dash(cv[3], cv[8]),  # D-I
+        dash(cv[3], cv[7]),  # D-H
+        dash(cv[7], cv[4]),  # H-E
+        dash(cv[7], cv[5]),  # H-F
+    ]
+    tri_label_right = Text("Triángulos = 8", font_size=24, color=WHITE)
+    tri_label_right.to_corner(DOWN + RIGHT, buff=0.5)
+    scene.play(
+        LaggedStart(*[Create(e) for e in copy_edges], lag_ratio=0.15),
+        FadeIn(tri_label_right),
+    )
+    scene.next_slide()
+
+    return {
+        "heading":         ctx["heading"],
+        "polygon":         polygon,
+        "regions":         regions,
+        "steiner_dots":    [k_dot, l_dot, m_dot],
+        "steiner_edges":   steiner_edges,
+        "tri_label":       tri_label,
+        "copy_polygon":    copy_polygon,
+        "copy_regions":    copy_regions,
+        "copy_edges":      copy_edges,
+        "tri_label_right": tri_label_right,
+    }
+
+
+@app.function
+def steiner_complejidad(scene, ctx):
+    if "polygon" in ctx:
+        scene.play(
+            FadeOut(ctx["polygon"]),
+            FadeOut(ctx["copy_polygon"]),
+            FadeOut(ctx["tri_label"]),
+            FadeOut(ctx["tri_label_right"]),
+            *[FadeOut(r) for r in ctx["regions"]],
+            *[FadeOut(d) for d in ctx["steiner_dots"]],
+            *[FadeOut(e) for e in ctx["steiner_edges"]],
+            *[FadeOut(r) for r in ctx["copy_regions"]],
+            *[FadeOut(e) for e in ctx["copy_edges"]],
+        )
+        heading = ctx["heading"]
+    else:
+        heading = Text("Puntos Steiner", font_size=28, color=WHITE)
+        heading.to_corner(UP + LEFT, buff=0.4)
+        scene.play(Write(heading))
+
+    complejidad_text = Text("- complejidad temporal", font_size=28, color=WHITE)
+    complejidad_text.next_to(heading, RIGHT, buff=0.3)
+    scene.play(FadeIn(complejidad_text))
+    scene.next_slide()
+
+    item1 = Text("1. Calcula la descomposición convexa mínima del polígono P en k regiones convexas.", font_size=20, color=WHITE)
+    item1.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+    scene.play(FadeIn(item1))
+    scene.next_slide()
+
+    cl1a = Text("Polígonos simples: con el algoritmo de Chazzelle  ", font_size=20, color=WHITE)
+    cl1b = MathTex(r"\ O(n + r^2) \ ", font_size=28, color=BLUE)
+    cl1c = Text("con ", font_size=20, color=WHITE)
+    cl1d = MathTex(r"\ r \leq n \ ", font_size=28, color=WHITE)
+    cl1e = Text(" vértices reflejo (cóncavos)", font_size=20, color=WHITE)
+    clar_line1 = VGroup(cl1a, cl1b, cl1c, cl1d, cl1e).arrange(RIGHT, buff=0.05, aligned_edge=DOWN)
+
+    clar_line2 = Text("Polígonos con hoyos: problema NP-duro", font_size=20, color=WHITE)
+
+    cl3a = Text("Sin descomposición mínima estricta: ", font_size=20, color=WHITE)
+    cl3b = MathTex(r"\ O(n \log n) \ ", font_size=28, color=BLUE)
+    cl3c = Text(" o ", font_size=20, color=WHITE)
+    cl3d = MathTex(r"\ O(n) \ ", font_size=28, color=BLUE)
+    clar_line3 = VGroup(cl3a, cl3b, cl3c, cl3d).arrange(RIGHT, buff=0.05, aligned_edge=DOWN)
+
+    clarification = VGroup(clar_line1, clar_line2, clar_line3).arrange(DOWN, buff=0.35, aligned_edge=LEFT)
+    clarification.next_to(item1, DOWN, buff=0.5, aligned_edge=LEFT)
+    scene.play(FadeIn(clarification))
+    scene.next_slide()
+
+    item2 = Text("2. Construye un árbol generador sobre esas k regiones.", font_size=20, color=WHITE)
+
+    item3 = Text(
+        "3. Designa una región raíz y una región adyacente a ella como \"root subareas\".",
+        font_size=20, color=WHITE, line_spacing=0.8,
+    )
+    item4 = Text(
+        "4. Coloca un punto Steiner sobre la frontera compartida entre esas dos\n   regiones raíz, y conecta todos los vértices del polígono a ese punto.",
+        font_size=20, color=WHITE, line_spacing=0.8,
+    )
+    item5 = Text(
+        "5. Para cada región restante, coloca otro punto Steiner sobre su frontera\n   compartida con la región raíz adyacente.",
+        font_size=20, color=WHITE, line_spacing=0.8,
+    )
+
+    items = [item1]
+
+    item2.next_to(item1, DOWN, buff=0.35, aligned_edge=LEFT)
+    items.append(item2)
+    scene.play(FadeOut(clarification), FadeIn(item2))
+    scene.next_slide()
+
+    clar2a = Text("Con Prim o Kruskal: ", font_size=20, color=WHITE)
+    clar2b = MathTex(r"\ O(n \log n) \ ", font_size=28, color=BLUE)
+    clar2 = VGroup(clar2a, clar2b).arrange(RIGHT, buff=0.05, aligned_edge=DOWN)
+    clar2.next_to(item2, DOWN, buff=0.35, aligned_edge=LEFT)
+    scene.play(FadeIn(clar2))
+    scene.next_slide()
+
+    item3.next_to(item2, DOWN, buff=0.35, aligned_edge=LEFT)
+    items.append(item3)
+    scene.play(FadeOut(clar2), FadeIn(item3))
+    scene.next_slide()
+
+    item4.next_to(item3, DOWN, buff=0.35, aligned_edge=LEFT)
+    items.append(item4)
+    scene.play(FadeIn(item4))
+    scene.next_slide()
+
+    cl4a = Text("Para k regiones con ", font_size=20, color=WHITE)
+    cl4b = MathTex(r"\ n_i \ ", font_size=28, color=WHITE)
+    cl4c = Text("vértices: \n", font_size=20, color=WHITE)
+    cl4d = MathTex(r"\ \sum_{i=1}^{k} O(n_i) = O(n) \ ", font_size=28, color=BLUE)
+    clar4 = VGroup(cl4a, cl4b, cl4c, cl4d).arrange(RIGHT, buff=0.05, aligned_edge=DOWN)
+    clar4.next_to(item4, DOWN, buff=0.35, aligned_edge=LEFT)
+    scene.play(FadeIn(clar4))
+    scene.next_slide()
+
+    item5.next_to(item4, DOWN, buff=0.35, aligned_edge=LEFT)
+    items.append(item5)
+    scene.play(FadeOut(clar4), FadeIn(item5))
+    scene.next_slide()
+
+    cl5a = Text("Recorrer con DFS: ", font_size=20, color=WHITE)
+    cl5b = MathTex(r"\ O(k) \rightarrow O(n) \ ", font_size=28, color=BLUE)
+    clar5 = VGroup(cl5a, cl5b).arrange(RIGHT, buff=0.05, aligned_edge=DOWN)
+    clar5.next_to(item5, DOWN, buff=0.35, aligned_edge=LEFT)
+    scene.play(FadeIn(clar5))
+    scene.next_slide()
+
+    big_o_n2 = MathTex(r"O(n^2)", font_size=80, color=BLUE)
+    big_o_n2.to_edge(DOWN, buff=0.5)
+    scene.play(FadeOut(clar5), FadeIn(big_o_n2))
+    scene.next_slide()
+
+    big_o_nlogn = MathTex(r"O(n \log n)", font_size=80, color=BLUE)
+    big_o_nlogn.to_edge(DOWN, buff=0.5)
+    scene.play(Transform(big_o_n2, big_o_nlogn))
+    scene.next_slide()
+
+    return {"heading": heading, "complejidad_text": complejidad_text, "items": items, "big_o": big_o_n2}
+
+
+@app.function
+def steiner_complejidad_espacio(scene, ctx):
+    heading = ctx["heading"]
+
+    espacial_text = Text("- complejidad espacial", font_size=28, color=WHITE)
+    espacial_text.next_to(heading, RIGHT, buff=0.3)
+
+    fade_items = [FadeOut(item) for item in ctx.get("items", [])]
+    if "big_o" in ctx:
+        fade_items.append(FadeOut(ctx["big_o"]))
+    scene.play(Transform(ctx["complejidad_text"], espacial_text), *fade_items)
+    scene.next_slide()
+
+    info_text = Text("Tenemos n vértices y k puntos Steiner", font_size=24, color=WHITE)
+    info_text.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+    scene.play(FadeIn(info_text))
+    scene.next_slide()
+
+    big_o = MathTex(r"O(n + k)", font_size=80, color=BLUE)
+    big_o.to_edge(DOWN, buff=0.5)
+    scene.play(FadeIn(big_o))
+    scene.next_slide()
+
+    big_o2 = MathTex(r"O(n + k) \rightarrow O(n)", font_size=80, color=BLUE)
+    big_o2.to_edge(DOWN, buff=0.5)
+    scene.play(Transform(big_o, big_o2))
+    scene.next_slide()
+
+    big_o3 = MathTex(r"O(n)", font_size=80, color=BLUE)
+    big_o3.to_edge(DOWN, buff=0.5)
+    scene.play(Transform(big_o, big_o3))
+    scene.next_slide()
+
+    text2 = Text(
+        "Para las triangulaciones con polígonos simples, tenemos n-2 triángulos.\n"
+        "Cuando añadimos puntos Steiner, las regiones locales son subdivididas",
+        font_size=20, color=WHITE, line_spacing=0.8,
+    )
+    text2.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+    scene.play(Transform(info_text, text2))
+    scene.next_slide()
+
+    text3 = Text(
+        "Para encontrar el camino hamiltoniano, tenemos que usar el grafo dual de la\n"
+        "triangulación, que tienen un nodo por triángulo y una arista por cada adyacencia\n"
+        "de triángulos. Hay k nodos y k-1 aristas.",
+        font_size=20, color=WHITE, line_spacing=0.8,
+    )
+    text3.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+    scene.play(Transform(info_text, text3))
+    scene.next_slide()
+
+    return {
+        "heading": heading,
+        "complejidad_text": ctx["complejidad_text"],
+        "items": [info_text],
+        "big_o": big_o,
+    }
+
+
+@app.function
+def steiner_triangulos(scene, ctx):
+    heading = ctx["heading"]
+
+    temporal_text = Text("- complejidad temporal", font_size=28, color=WHITE)
+    temporal_text.next_to(heading, RIGHT, buff=0.3)
+
+    fade_items = [FadeOut(item) for item in ctx.get("items", [])]
+    if "big_o" in ctx:
+        fade_items.append(FadeOut(ctx["big_o"]))
+    scene.play(Transform(ctx["complejidad_text"], temporal_text), *fade_items)
+    scene.next_slide()
+
+    step_text = Text("1 - Calcular el incírculo de cada triángulo", font_size=24, color=WHITE)
+    step_text.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+    scene.play(FadeIn(step_text))
+    scene.next_slide()
+
+    big_o = MathTex(r"O(k)", font_size=60, color=BLUE)
+    big_o.to_edge(DOWN, buff=0.5)
+    scene.play(FadeIn(big_o))
+    scene.next_slide()
+
+    for label in [
+        "2 - Colocar Steiner points y subdividir",
+        "3 - Construir la gráfica dual de T",
+        "4 - Calcular el árbol generador de peso mínimo de la gráfica dual",
+        "5 - Identificar aristas que necesitan flip",
+        "6 - Realizar los flips",
+    ]:
+        new_step = Text(label, font_size=24, color=WHITE)
+        new_step.next_to(heading, DOWN, buff=0.6, aligned_edge=LEFT)
+        scene.play(Transform(step_text, new_step))
+        scene.next_slide()
+
+    scene.play(FadeOut(step_text))
+    scene.next_slide()
+
+    center_formula = MathTex(r"k = 2n - h - 2", font_size=60, color=WHITE)
+    center_formula.move_to(ORIGIN)
+    scene.play(FadeIn(center_formula))
+    scene.next_slide()
+
+    center_formula2 = MathTex(r"k = 2n - h - 2 \rightarrow h = 3", font_size=60, color=WHITE)
+    center_formula2.move_to(ORIGIN)
+    scene.play(Transform(center_formula, center_formula2))
+    scene.next_slide()
+
+    center_formula3 = MathTex(r"k = O(n)", font_size=80, color=WHITE)
+    center_formula3.move_to(ORIGIN)
+    scene.play(Transform(center_formula, center_formula3))
+    scene.next_slide()
+
+    big_o2 = MathTex(r"O(n)", font_size=80, color=BLUE)
+    big_o2.to_edge(DOWN, buff=0.5)
+    scene.play(Transform(big_o, big_o2))
+    scene.next_slide()
+
+    return {
+        "heading": heading,
+        "complejidad_text": ctx["complejidad_text"],
+        "items": [center_formula],
+        "big_o": big_o,
+    }
+
+
+@app.function
+def steiner_conclusiones(scene, ctx):
+    heading = ctx["heading"]
+
+    conclusiones_text = Text("- conclusiones", font_size=28, color=WHITE)
+    conclusiones_text.next_to(heading, RIGHT, buff=0.3)
+
+    fade_items = [FadeOut(item) for item in ctx.get("items", [])]
+    if "big_o" in ctx:
+        fade_items.append(FadeOut(ctx["big_o"]))
+    if "complejidad_text" in ctx:
+        scene.play(Transform(ctx["complejidad_text"], conclusiones_text), *fade_items)
+    else:
+        scene.play(FadeIn(conclusiones_text), *fade_items)
+    scene.next_slide()
+
+    t1 = Text(
+        "Con este algoritmo llegamos a una triagulación Hamiltoniana\n"
+        "incluso si originalmente no la admite",
+        font_size=22, color=WHITE, line_spacing=0.8,
+    )
+    t1.next_to(heading, DOWN, buff=0.7, aligned_edge=LEFT)
+
+    t2 = Text(
+        "La triangulación Hamiltoniana que se genera no es siempre óptima",
+        font_size=22, color=WHITE,
+    )
+    t2.next_to(t1, DOWN, buff=0.5, aligned_edge=LEFT)
+
+    t3 = Text(
+        "La triangulación generada nunca va a ser secuencial",
+        font_size=22, color=WHITE,
+    )
+    t3.next_to(t2, DOWN, buff=0.5, aligned_edge=LEFT)
+
+    scene.play(FadeIn(t1))
+    scene.next_slide()
+    scene.play(FadeIn(t2))
+    scene.next_slide()
+    scene.play(FadeIn(t3))
+    scene.next_slide()
+
+    return {"heading": heading, "conclusiones_text": conclusiones_text, "t1": t1, "t2": t2, "t3": t3}
 
 @app.function
 def hexagon_slide(scene, ctx):
