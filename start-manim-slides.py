@@ -478,7 +478,7 @@ def onion_slide_2(scene, ctx):
     outer_poly = Polygon(
         pos["F1"], pos["E1"], pos["V"], pos["N"], pos["J"],
         pos["D"], pos["E"], pos["F"], pos["K"], pos["A1"],
-        fill_color=BLUE, fill_opacity=0.2, stroke_width=0,
+        fill_color=BLUE, fill_opacity=0.8, stroke_width=0,
     )
     label_q = Text("Q", font_size=18, color=WHITE)
     label_q.move_to(np.array([0.2, 0.0, 0.0]))
@@ -545,14 +545,225 @@ def onion_slide_2(scene, ctx):
     scene.play(Create(tri_cdj))
     scene.next_slide()
 
+    # Color B, D, E, O green; add labels p, q, p', q'
+    dot_e = ctx["point_dots"][4]
+    dot_o = ctx["point_dots"][14]
+    label_p_b = Text("p", font_size=14, color=WHITE)
+    label_p_b.next_to(dot_b, LEFT, buff=0.12)
+    label_q_d = Text("q", font_size=14, color=WHITE)
+    label_q_d.next_to(dot_d, RIGHT, buff=0.12)
+    label_pp_o = Text("p'", font_size=14, color=WHITE)
+    label_pp_o.next_to(dot_o, LEFT, buff=0.12)
+    label_qp_e = Text("q'", font_size=14, color=WHITE)
+    label_qp_e.next_to(dot_e, DOWN, buff=0.12)
+    scene.play(
+        dot_b.animate.set_color(GREEN),
+        dot_d.animate.set_color(GREEN),
+        dot_e.animate.set_color(GREEN),
+        dot_o.animate.set_color(GREEN),
+        FadeIn(label_p_b), FadeIn(label_q_d), FadeIn(label_pp_o), FadeIn(label_qp_e),
+    )
+    scene.next_slide()
+
+    # Red triangle B-E-O
+    tri_beo_1 = Polygon(
+        pos["B"], pos["D"], pos["O"],
+        fill_color=RED, fill_opacity=0.3, stroke_color=RED, stroke_width=sw,
+    )
+    scene.play(Create(tri_beo_1))
+    scene.next_slide()
+
+    # Fade red triangle B-E-O
+    scene.play(FadeOut(tri_beo_1))
+    scene.next_slide()
+
+    # Blue triangle B-D-E
+    tri_bde = Polygon(
+        pos["B"], pos["D"], pos["E"],
+        fill_color=BLUE, fill_opacity=0.3, stroke_color=BLUE, stroke_width=sw,
+    )
+    scene.play(Create(tri_bde))
+    scene.next_slide()
+
+    # D→white, F→green, E label q'→q, F label q', remove D's q label
+    dot_f = ctx["point_dots"][5]
+    new_label_q_e = Text("q", font_size=14, color=WHITE)
+    new_label_q_e.next_to(dot_e, DOWN, buff=0.12)
+    label_qp_f = Text("q'", font_size=14, color=WHITE)
+    label_qp_f.next_to(dot_f, DOWN, buff=0.12)
+    scene.play(
+        dot_d.animate.set_color(WHITE),
+        dot_f.animate.set_color(GREEN),
+        Transform(label_qp_e, new_label_q_e),
+        FadeIn(label_qp_f),
+        FadeOut(label_q_d),
+    )
+    scene.next_slide()
+
+    # Red triangle B-E-O (second time)
+    tri_beo_2 = Polygon(
+        pos["B"], pos["E"], pos["O"],
+        fill_color=RED, fill_opacity=0.3, stroke_color=RED, stroke_width=sw,
+    )
+    scene.play(Create(tri_beo_2))
+    scene.next_slide()
+
+    # Fade it
+    scene.play(FadeOut(tri_beo_2))
+    scene.next_slide()
+
+    # Blue triangle B-E-F
+    tri_bef = Polygon(
+        pos["B"], pos["E"], pos["F"],
+        fill_color=BLUE, fill_opacity=0.3, stroke_color=BLUE, stroke_width=sw,
+    )
+    scene.play(Create(tri_bef))
+    scene.next_slide()
+
+    # Remove E's label, K gets q', F label q'→q
+    dot_k = ctx["point_dots"][10]
+    label_qp_k = Text("q'", font_size=14, color=WHITE)
+    label_qp_k.next_to(dot_k, LEFT, buff=0.12)
+    new_label_q_f = Text("q", font_size=14, color=WHITE)
+    new_label_q_f.next_to(dot_f, DOWN, buff=0.12)
+    scene.play(
+        FadeOut(label_qp_e),
+        FadeIn(label_qp_k),
+        Transform(label_qp_f, new_label_q_f),
+    )
+    scene.next_slide()
+
+    # Yellow triangle B-F-K
+    tri_bfk = Polygon(
+        pos["B"], pos["F"], pos["K"],
+        fill_color=YELLOW, fill_opacity=0.3, stroke_color=YELLOW, stroke_width=sw,
+    )
+    scene.play(Create(tri_bfk))
+    scene.next_slide()
+
+    # Fade it
+    scene.play(FadeOut(tri_bfk))
+    scene.next_slide()
+
+    # Blue triangle B-F-O
+    tri_bfo = Polygon(
+        pos["B"], pos["F"], pos["O"],
+        fill_color=BLUE, fill_opacity=0.3, stroke_color=BLUE, stroke_width=sw,
+    )
+    scene.play(Create(tri_bfo))
+    scene.next_slide()
+
+    # Fade out polygon, all triangles, all labels, all edges
+    scene.play(
+        FadeOut(outer_poly),
+        FadeOut(label_q), FadeOut(label_p),
+        FadeOut(edge_bc), FadeOut(edge_dj),
+        FadeOut(label_dot_a), FadeOut(label_dot_b), FadeOut(label_edge_e),
+        FadeOut(label_dot_v), FadeOut(label_dot_u), FadeOut(label_edge_f),
+        FadeOut(tri_bcd), FadeOut(tri_cdj),
+        FadeOut(label_p_b), FadeOut(label_pp_o),
+        FadeOut(label_qp_f), FadeOut(label_qp_k),
+        FadeOut(tri_bde), FadeOut(tri_bef), FadeOut(tri_bfo),
+    )
+    scene.next_slide()
+
     return {
         **ctx,
-        "outer_poly": outer_poly, "label_q": label_q, "label_p": label_p,
-        "edge_bc": edge_bc, "label_dot_a": label_dot_a, "label_dot_b_text": label_dot_b,
-        "label_edge_e": label_edge_e, "label_dot_v": label_dot_v,
-        "tri_bcd": tri_bcd, "label_dot_u": label_dot_u,
-        "edge_dj": edge_dj, "label_edge_f": label_edge_f, "tri_cdj": tri_cdj,
+        "tri_bfo": tri_bfo,
     }
+
+
+@app.function
+def onion_slide_3(scene, ctx):
+    pos = ctx["pos"]
+    sw = 1.5
+
+    # Reset all dots to white
+    scene.play(*[dot.animate.set_color(WHITE) for dot in ctx["point_dots"]])
+    scene.next_slide()
+
+    # Batch 1
+    batch1 = VGroup(
+        DashedLine(pos["B"],  pos["C"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["C"],  pos["D"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["B"],  pos["D"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["B"],  pos["E"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["B"],  pos["F"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["F"],  pos["O"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["O"],  pos["K"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["O"],  pos["A1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["A1"], pos["G1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["G1"], pos["F1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["F1"], pos["I1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["I1"], pos["E1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["E1"], pos["H1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["H1"], pos["V"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["V"],  pos["U"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["U"],  pos["N"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["N"],  pos["H"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["H"],  pos["J"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["J"],  pos["C"],  color=WHITE, stroke_width=sw),
+    )
+    scene.play(Create(batch1))
+    scene.next_slide()
+
+    # Batch 2
+    batch2 = VGroup(
+        DashedLine(pos["J"],  pos["I"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["I"],  pos["D"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["I"],  pos["E"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["E"],  pos["G"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["G"],  pos["F"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["G"],  pos["K"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["K"],  pos["Z"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["Z"],  pos["A1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["A1"], pos["D1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["D1"], pos["F1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["D1"], pos["E1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["E1"], pos["C1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["C1"], pos["V"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["V"],  pos["T"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["T"],  pos["N"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["N"],  pos["P"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["P"],  pos["J"],  color=WHITE, stroke_width=sw),
+    )
+    scene.play(Create(batch2))
+    scene.next_slide()
+
+    # Batch 3
+    batch3 = VGroup(
+        DashedLine(pos["P"],  pos["M"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["M"],  pos["I"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["M"],  pos["P"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["I"],  pos["L"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["L"],  pos["G"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["L"],  pos["Z"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["Z"],  pos["W"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["W"],  pos["D1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["D1"], pos["B1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["B1"], pos["C1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["C1"], pos["R"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["R"],  pos["T"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["R"],  pos["P"],  color=WHITE, stroke_width=sw),
+    )
+    scene.play(Create(batch3))
+    scene.next_slide()
+
+    # Batch 4
+    batch4 = VGroup(
+        DashedLine(pos["R"],  pos["S"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["S"],  pos["M"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["M"],  pos["Q"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["Q"],  pos["L"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["Q"],  pos["W"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["W"],  pos["A"],  color=WHITE, stroke_width=sw),
+        DashedLine(pos["A"],  pos["B1"], color=WHITE, stroke_width=sw),
+        DashedLine(pos["B1"], pos["S"],  color=WHITE, stroke_width=sw),
+    )
+    scene.play(Create(batch4))
+    scene.next_slide()
+
+    return {**ctx, "batch1": batch1, "batch2": batch2, "batch3": batch3, "batch4": batch4}
 
 
 @app.cell
@@ -560,7 +771,7 @@ def _():
     import inspect
     import textwrap
 
-    _slide_fns = [steiner_conclusiones, section3_slide, insertion_slide, insertion_slide_2, onion_slide, onion_slide_2]
+    _slide_fns = [steiner_conclusiones, section3_slide, insertion_slide, insertion_slide_2, onion_slide, onion_slide_2, onion_slide_3]
 
     _header = """\
     # -*- coding: utf-8 -*-
@@ -595,6 +806,8 @@ def _():
         "        self.next_slide()\n"
         "        ctx = onion_slide_2(self, ctx)\n"
         "        self.next_slide()\n"
+        "        ctx = onion_slide_3(self, ctx)\n"
+        "        self.next_slide()\n"
     )
 
     with open("render_slides.py", "w", encoding="utf-8") as _f:
@@ -609,7 +822,7 @@ def _(slides):
     from moterm import Kmd
 
     _ = slides  # establece dependencia para que el ensamblado corra primero
-    out1 = Kmd("manim-slides render render_slides.py SimpleSlides -qm")
+    out1 = Kmd("manim-slides render render_slides.py SimpleSlides")
     out1
     return Kmd, out1
 
