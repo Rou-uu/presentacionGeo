@@ -477,6 +477,7 @@ def onion_slide_2(scene, ctx):
     dot_d = ctx["point_dots"][3]
     label_dot_v = Text("v", font_size=14, color=WHITE)
     label_dot_v.next_to(dot_d, LEFT, buff=0.12)
+    label_dot_v.set_z_index(2)
     scene.play(dot_d.animate.set_color(RED), FadeIn(label_dot_v))
     scene.next_slide()
 
@@ -492,10 +493,12 @@ def onion_slide_2(scene, ctx):
     dot_j = ctx["point_dots"][9]
     label_dot_u = Text("u", font_size=14, color=WHITE)
     label_dot_u.next_to(dot_j, RIGHT, buff=0.12)
+    label_dot_u.set_z_index(2)
     edge_dj = Line(pos["D"], pos["J"], color=BLUE, stroke_width=sw)
     mid_dj = (pos["D"] + pos["J"]) / 2
     label_edge_f = Text("f", font_size=14, color=WHITE)
     label_edge_f.move_to(mid_dj + np.array([0.2, 0.0, 0.0]))
+    label_edge_f.set_z_index(2)
     scene.play(
         dot_j.animate.set_color(RED),
         FadeIn(label_dot_u),
@@ -517,12 +520,16 @@ def onion_slide_2(scene, ctx):
     dot_o = ctx["point_dots"][14]
     label_p_b = Text("p", font_size=14, color=WHITE)
     label_p_b.next_to(dot_b, LEFT, buff=0.12)
+    label_p_b.set_z_index(2)
     label_q_d = Text("q", font_size=14, color=WHITE)
     label_q_d.next_to(dot_d, RIGHT, buff=0.12)
+    label_q_d.set_z_index(2)
     label_pp_o = Text("p'", font_size=14, color=WHITE)
     label_pp_o.next_to(dot_o, LEFT, buff=0.12)
+    label_pp_o.set_z_index(2)
     label_qp_e = Text("q'", font_size=14, color=WHITE)
     label_qp_e.next_to(dot_e, DOWN, buff=0.12)
+    label_qp_e.set_z_index(2)
     scene.play(
         dot_b.animate.set_color(GREEN),
         dot_d.animate.set_color(GREEN),
@@ -556,8 +563,10 @@ def onion_slide_2(scene, ctx):
     dot_f = ctx["point_dots"][5]
     new_label_q_e = Text("q", font_size=14, color=WHITE)
     new_label_q_e.next_to(dot_e, DOWN, buff=0.12)
+    new_label_q_e.set_z_index(2)
     label_qp_f = Text("q'", font_size=14, color=WHITE)
     label_qp_f.next_to(dot_f, DOWN, buff=0.12)
+    label_qp_f.set_z_index(2)
     scene.play(
         dot_d.animate.set_color(WHITE),
         dot_f.animate.set_color(GREEN),
@@ -591,8 +600,10 @@ def onion_slide_2(scene, ctx):
     dot_k = ctx["point_dots"][10]
     label_qp_k = Text("q'", font_size=14, color=WHITE)
     label_qp_k.next_to(dot_k, LEFT, buff=0.12)
+    label_qp_k.set_z_index(2)
     new_label_q_f = Text("q", font_size=14, color=WHITE)
     new_label_q_f.next_to(dot_f, DOWN, buff=0.12)
+    new_label_q_f.set_z_index(2)
     scene.play(
         FadeOut(label_qp_e),
         FadeIn(label_qp_k),
@@ -729,7 +740,18 @@ def onion_slide_3(scene, ctx):
     scene.play(Create(batch4))
     scene.next_slide()
 
-    return {**ctx, "batch1": batch1, "batch2": batch2, "batch3": batch3, "batch4": batch4}
+    # Fade out everything
+    scene.play(
+        FadeOut(batch1), FadeOut(batch2), FadeOut(batch3), FadeOut(batch4),
+        FadeOut(ctx["point_dots"]),
+        FadeOut(ctx["red_edges"]),
+        FadeOut(ctx["onion_edges"]),
+        FadeOut(ctx["title"]),
+        FadeOut(ctx["insertion_text"]),
+    )
+    scene.next_slide()
+
+    return {}
 
 
 class SimpleSlides(Slide):
