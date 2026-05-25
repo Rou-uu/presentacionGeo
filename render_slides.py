@@ -211,316 +211,378 @@ def holes_slide(scene, ctx):
 def paper_slide(scene, ctx):
     import numpy as np
     from manim import (
-        Text, Line, Dot, VGroup, DashedLine,
-        Write, FadeIn, FadeOut, Create, Transform,
-        WHITE, YELLOW,
+        Text, Line, Dot, Polygon, VGroup, DashedLine,
+        Write, FadeIn, FadeOut, Create,
+        WHITE, YELLOW, GRAY_B, BLUE_C, BLUE_D, RED, GREEN, ORANGE,
         UP, DOWN, LEFT, RIGHT,
     )
 
-    def p(x, y):
-        return np.array([x, y, 0])
+    LBL_SZ  = 16
+    HEAD_SZ = 26
+    SUB_SZ  = 18
+    NOTE_SZ = 14
 
-    def unit(a, b):
-        d = b - a
-        return d / np.linalg.norm(d)
+    def pt(gx, gy):
+        return np.array([(gx - 30) * 0.17, (gy - 22) * 0.17, 0.0])
 
-    def perp_left(u):
-        return np.array([-u[1], u[0], 0])
+    PA  = pt(25, 40)   # A
+    PB  = pt(35, 40)   # B
+    PC  = pt(55, 10)   # C
+    PD  = pt(50,  5)   # D  (antes Four)
+    PE  = pt(10,  5)   # E
+    PF  = pt( 5, 10)   # F
+    Pc  = pt(30, 25)   # c  (antes Three)
+    Pa  = pt(25, 15)   # a  (antes One)
+    Pb  = pt(35, 15)   # b  (antes Two)
 
-    def line_intersect(p1, d1, p2, d2):
-        A = np.array([[d1[0], -d2[0]], [d1[1], -d2[1]]])
-        b = (p2 - p1)[:2]
-        try:
-            ts = np.linalg.solve(A, b)
-            return p1 + ts[0] * d1
-        except np.linalg.LinAlgError:
-            return (p1 + p2) / 2
+    def mk_dot(pos, color=WHITE):
+        return Dot(pos, radius=0.08, color=color).set_z_index(4)
 
-    def node_triangle(center, nbrs, gap):
-        us = [unit(center, nb) for nb in nbrs]
-        ns = [perp_left(u) for u in us]
-        verts = []
-        for i in range(len(nbrs)):
-            j = (i + 1) % len(nbrs)
-            v = line_intersect(
-                center + ns[i] * gap, us[i],
-                center - ns[j] * gap, us[j],
-            )
-            verts.append(v)
-        return verts
+    def mk_seg(a, b, color=WHITE, sw=2.5):
+        return Line(a, b, color=color, stroke_width=sw)
 
-    def mk_dot(pos, r=0.10):
-        return Dot(pos, radius=r, color=WHITE).set_z_index(2)
+    def mk_dash(a, b, color=GRAY_B, sw=2.0):
+        return DashedLine(a, b, color=color, stroke_width=sw, dash_length=0.12)
 
-    def mk_line(a, b, sw=2.5):
-        return Line(a, b, color=WHITE, stroke_width=sw)
+    def mk_lbl(txt, pos, direction=UP, buff=0.13, color=BLUE_C, size=LBL_SZ):
+        return Text(txt, font_size=size, color=color).next_to(pos, direction, buff=buff)
 
-    # ── Fade out slide anterior ──────────────────────────────────────────
-    all_prev = [v for v in ctx.values() if v is not None]
-    if all_prev:
-        scene.play(*[FadeOut(obj) for obj in all_prev])
+    def mk_num(txt, pos, direction=DOWN, buff=0.18, color=YELLOW, size=LBL_SZ):
+        return Text(txt, font_size=size, color=color).next_to(pos, direction, buff=buff)
 
-    heading = Text("Ejemplo de la reducción", font_size=30, color=WHITE)
-    heading.to_corner(UP + LEFT, buff=0.4)
+    def mk_poly(verts, color=BLUE_D, opacity=0.20):
+        return Polygon(
+            *verts, color=color, fill_color=color,
+            fill_opacity=opacity, stroke_width=1.5,
+        ).set_z_index(1)
+
+    def build_hull():
+        hull_pts = [PF, PA, PB, PC, PD, PE]
+        return VGroup(*[
+            mk_seg(hull_pts[i], hull_pts[(i+1) % len(hull_pts)])
+            for i in range(len(hull_pts))
+        ])
+
+    def build_inner():
+        return VGroup(
+            mk_seg(Pc, Pa),
+            mk_seg(Pa, Pb),
+            mk_seg(Pb, Pc),
+        )
+
+    def build_dots():
+        return VGroup(*[mk_dot(p) for p in
+                        [PA, PB, PC, PD, PE, PF, Pc, Pa, Pb]])
+
+    # ── Limpiar escena ────────────────────────────────────────────────────────
+    prev = list(scene.mobjects)
+    if prev:
+        scene.play(*[FadeOut(m) for m in prev], run_time=0.6)
+
+    heading = Text(
+        'Teorema 4.1 — Caso 1: D = 4',
+        font_size=HEAD_SZ, color=WHITE,
+    ).to_corner(UP + LEFT, buff=0.35)
     scene.play(Write(heading))
 
-    # ════════════════════════════════════════════════════════════════════
-    # Coordenadas de la gráfica cúbica
-    # ════════════════════════════════════════════════════════════════════
-    L     = p(-1.2,  0.0)
-    R     = p( 1.2,  0.0)
-    L_top = p(-3.8,  2.4)
-    L_bot = p(-3.8, -2.4)
-    R_top = p( 3.8,  2.4)
-    R_bot = p( 3.8, -2.4)
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 0 — Figura original con letras del paper
+    # One→a, Two→b, Three→c; hull: A,B,C,D,E,F
+    # ════════════════════════════════════════════════════════════════════════
+    sub0 = Text('Figura original: 9 puntos', font_size=SUB_SZ, color=GRAY_B)
+    sub0.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub0), run_time=0.3)
 
-    gap  = 0.28
-    rise = 0.85
+    hull  = build_hull()
+    inner = build_inner()
+    dots  = build_dots()
 
-    # ── SLIDE 1: gráfica cúbica ──────────────────────────────────────────
-    e_LR  = mk_line(L, R)
-    e_LLt = mk_line(L, L_top)
-    e_LLb = mk_line(L, L_bot)
-    e_RRt = mk_line(R, R_top)
-    e_RRb = mk_line(R, R_bot)
+    # Labels individuales (figura original con letras del paper)
+    lbl_A0 = mk_lbl('A', PA, direction=UP+LEFT,  buff=0.10)
+    lbl_B0 = mk_lbl('B', PB, direction=UP+RIGHT, buff=0.10)
+    lbl_C0 = mk_lbl('C', PC, direction=RIGHT,    buff=0.10)
+    lbl_D0 = mk_lbl('D', PD, direction=DOWN,     buff=0.12)
+    lbl_E0 = mk_lbl('E', PE, direction=DOWN,     buff=0.12)
+    lbl_F0 = mk_lbl('F', PF, direction=LEFT,     buff=0.10)
+    lbl_c0 = mk_lbl('c', Pc, direction=UP+LEFT,  buff=0.10)
+    lbl_a0 = mk_lbl('a', Pa, direction=LEFT,     buff=0.10)
+    lbl_b0 = mk_lbl('b', Pb, direction=RIGHT,    buff=0.10)
+    all_labels0 = VGroup(lbl_A0, lbl_B0, lbl_C0, lbl_D0,
+                         lbl_E0, lbl_F0, lbl_c0, lbl_a0, lbl_b0)
 
-    d_L    = mk_dot(L,     r=0.13)
-    d_R    = mk_dot(R,     r=0.13)
-    d_Ltop = mk_dot(L_top, r=0.10)
-    d_Lbot = mk_dot(L_bot, r=0.10)
-    d_Rtop = mk_dot(R_top, r=0.10)
-    d_Rbot = mk_dot(R_bot, r=0.10)
+    scene.play(Create(hull),        run_time=1.0)
+    scene.play(Create(inner),       run_time=0.8)
+    scene.play(FadeIn(dots),        run_time=0.4)
+    scene.play(FadeIn(all_labels0), run_time=0.5)
+
+    scene.next_slide()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 1 — Case1Start: numeración 1–4
+    # Renombramos a→One, b→Two, c→Three para la narrativa del caso
+    # Al poner el número desaparece el label de letra
+    # ════════════════════════════════════════════════════════════════════════
+    scene.play(FadeOut(sub0), run_time=0.3)
+    sub1 = Text('Asignación: a=1, b=2, c=3, D=4',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub1.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub1), run_time=0.3)
+
+    seg_l = mk_seg(PD, Pb)   # D–b
+    seg_m = mk_seg(PD, Pc)   # D–c
+    scene.play(Create(seg_l), Create(seg_m), run_time=0.6)
+
+    num1 = mk_num('1', Pa, direction=DOWN+LEFT, buff=0.20, color=YELLOW)
+    num2 = mk_num('2', Pb, direction=DOWN+RIGHT,buff=0.20, color=YELLOW)
+    num3 = mk_num('3', Pc, direction=UP,        buff=0.20, color=YELLOW)
+    num4 = mk_num('4', PD, direction=DOWN,      buff=0.22, color=ORANGE)
 
     scene.play(
-        Create(e_LR), Create(e_LLt), Create(e_LLb),
-        Create(e_RRt), Create(e_RRb),
-        FadeIn(d_L), FadeIn(d_R),
-        FadeIn(d_Ltop), FadeIn(d_Lbot),
-        FadeIn(d_Rtop), FadeIn(d_Rbot),
+        FadeIn(num1),  FadeOut(lbl_a0),
+        FadeIn(num2),  FadeOut(lbl_b0),
+        FadeIn(num3),  FadeOut(lbl_c0),
+        FadeIn(num4),  FadeOut(lbl_D0),
+        run_time=0.6,
     )
+
+    note1 = Text(
+        'D=4 es el primer punto del hull exterior en la secuencia.',
+        font_size=NOTE_SZ, color=GRAY_B,
+    ).to_corner(DOWN + LEFT, buff=0.35)
+    scene.play(FadeIn(note1), run_time=0.4)
+
     scene.next_slide()
 
-    # ════════════════════════════════════════════════════════════════════
-    # SLIDE 2: nodos explotan en triángulos
-    # L vecinos CCW: [R, L_top, L_bot]
-    # R vecinos CCW: [R_top, L, R_bot]
-    # ════════════════════════════════════════════════════════════════════
-    Lv = node_triangle(L, [R, L_top, L_bot], gap)
-    # Lv[0]: entre L→R y L→Ltop  → boca superior túnel central (= vértice 'c')
-    # Lv[1]: entre L→Ltop y L→Lbot → extremo externo (= vértice 'a')
-    # Lv[2]: entre L→Lbot y L→R  → boca inferior túnel central (= vértice 'b')
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 2 — ¿Por qué E no puede ser el punto 0?
+    # ════════════════════════════════════════════════════════════════════════
+    scene.play(FadeOut(sub1), FadeOut(note1), run_time=0.3)
+    sub2 = Text('¿Por qué E no puede ser el punto 0?',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub2.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub2), run_time=0.3)
 
-    Rv = node_triangle(R, [R_top, L, R_bot], gap)
-    # Rv[0]: entre R→Rtop y R→L  → boca superior túnel central (= vértice 'e')
-    # Rv[1]: entre R→L y R→Rbot  → boca inferior túnel central (= vértice 'd')
-    # Rv[2]: entre R→Rbot y R→Rtop → extremo externo (= vértice 'f')
+    dash_n2 = mk_dash(PE, Pa)   # E–a
+    dash_p2 = mk_dash(PE, Pb)   # E–b
+    poly2   = mk_poly([Pb, PE, PD])
+    seg2_blue = VGroup(
+        mk_seg(Pb,  PE, color=BLUE_D, sw=2.5),
+        mk_seg(PD,  Pb, color=BLUE_D, sw=2.5),
+        mk_seg(PE,  PD, color=BLUE_D, sw=2.5),
+    )
 
-    dLv = [Dot(L, radius=0.10, color=WHITE).set_z_index(2) for _ in range(3)]
-    dRv = [Dot(R, radius=0.10, color=WHITE).set_z_index(2) for _ in range(3)]
-    for d in dLv + dRv:
-        scene.add(d)
+    scene.play(Create(dash_n2), Create(dash_p2), run_time=0.7)
+    note2a = Text(
+        'Si E = 0, debe formar triángulo (0,1,2) con a y b.',
+        font_size=NOTE_SZ, color=GRAY_B,
+    ).to_corner(DOWN + LEFT, buff=0.55)
+    note2b = Text(
+        '→ La región (b, E, D) quedaría sin cubrir.  ✗',
+        font_size=NOTE_SZ, color=RED,
+    ).next_to(note2a, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(note2a), run_time=0.4)
+    scene.play(FadeIn(poly2),  run_time=0.5)
+    scene.play(Create(seg2_blue), run_time=0.6)
+    scene.play(FadeIn(note2b), run_time=0.4)
+
+    scene.next_slide()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 3 — Candidatos para el punto 5
+    # A, B, C se renombran → sus labels desaparecen
+    # Dashed D–a se dibuja y permanece en slides siguientes
+    # ════════════════════════════════════════════════════════════════════════
+    scene.play(
+        FadeOut(sub2),
+        FadeOut(dash_n2), FadeOut(dash_p2),
+        FadeOut(poly2),   FadeOut(seg2_blue),
+        FadeOut(note2a),  FadeOut(note2b),
+        run_time=0.4,
+    )
+    sub3 = Text('Candidatos para el punto 5',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub3.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub3), run_time=0.3)
+
+    dash_d_a = mk_dash(PD, Pa)   # D–a, permanece hasta el final
+    scene.play(Create(dash_d_a), run_time=0.5)
+
+    lbl_fc2 = mk_lbl('FiveCand₂', PA, direction=UP+LEFT,  buff=0.10, color=ORANGE)
+    lbl_fc1 = mk_lbl('FiveCand₁', PB, direction=UP+RIGHT, buff=0.10, color=ORANGE)
+    lbl_fc  = mk_lbl('FiveCand',  PC, direction=RIGHT,    buff=0.10, color=ORANGE)
 
     scene.play(
-        FadeOut(d_L), FadeOut(d_R),
-        *[dLv[i].animate.move_to(Lv[i]) for i in range(3)],
-        *[dRv[i].animate.move_to(Rv[i]) for i in range(3)],
+        FadeIn(lbl_fc2), FadeOut(lbl_A0),
+        FadeIn(lbl_fc1), FadeOut(lbl_B0),
+        FadeIn(lbl_fc),  FadeOut(lbl_C0),
+        run_time=0.5,
     )
+
+    note3 = Text(
+        'Candidatos a 5: FiveCand₂ (A), FiveCand₁ (B), FiveCand (C).',
+        font_size=NOTE_SZ, color=ORANGE,
+    ).to_corner(DOWN + LEFT, buff=0.45)
+    note3b = Text(
+        'Deben formar triángulo (2,4,5) con b y D.',
+        font_size=NOTE_SZ, color=GRAY_B,
+    ).next_to(note3, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(note3), FadeIn(note3b), run_time=0.5)
+
     scene.next_slide()
 
-    # ════════════════════════════════════════════════════════════════════
-    # Función para transformar una arista en túnel en V
-    # Devuelve (vTM, vBM): las dos puntas del V (arc vertices)
-    # ════════════════════════════════════════════════════════════════════
-    def edge_to_V(edge_mob,
-                  src_top, src_bot,
-                  dst_top, dst_bot,
-                  src_dot_top, src_dot_bot,
-                  dst_dot_top, dst_dot_bot,
-                  u_edge, rise_sign):
-        n_rise = perp_left(u_edge) * rise_sign
-
-        # Paso 1: paralelas
-        top = mk_line(src_top, dst_top)
-        bot = mk_line(src_bot, dst_bot)
-        anims = [Transform(edge_mob, top), FadeIn(bot)]
-        for sd, pos in [(src_dot_top, src_top), (src_dot_bot, src_bot)]:
-            anims.append(sd.animate.move_to(pos))
-        for sd, pos in [(dst_dot_top, dst_top), (dst_dot_bot, dst_bot)]:
-            if sd is not None:
-                anims.append(sd.animate.move_to(pos))
-        scene.play(*anims)
-        scene.next_slide()
-
-        # Paso 2: vértice central
-        TM = (src_top + dst_top) / 2
-        BM = (src_bot + dst_bot) / 2
-        tTL = mk_line(src_top, TM);  tTR = mk_line(TM, dst_top)
-        tBL = mk_line(src_bot, BM);  tBR = mk_line(BM, dst_bot)
-        dTM = mk_dot(TM, r=0.09);    dBM = mk_dot(BM, r=0.09)
-        scene.play(
-            Transform(edge_mob, tTL), FadeIn(tTR),
-            Transform(bot, tBL),      FadeIn(tBR),
-            FadeIn(dTM), FadeIn(dBM),
-        )
-        scene.next_slide()
-
-        # Paso 3: centrales suben → V
-        vTM = TM + n_rise * rise
-        vBM = BM + n_rise * rise
-        vTL = mk_line(src_top, vTM);  vTR = mk_line(vTM, dst_top)
-        vBL = mk_line(src_bot, vBM);  vBR = mk_line(vBM, dst_bot)
-        dvTM = mk_dot(vTM, r=0.09);   dvBM = mk_dot(vBM, r=0.09)
-        scene.play(
-            Transform(edge_mob, vTL), Transform(tTR, vTR),
-            Transform(bot,      vBL), Transform(tBR, vBR),
-            Transform(dTM, dvTM),     Transform(dBM, dvBM),
-        )
-        scene.next_slide()
-        return vTM, vBM   # arc vertices: punta superior e inferior del V
-
-    u_LR  = unit(L, R)
-    u_LLt = unit(L, L_top)
-    u_LLb = unit(L, L_bot)
-    u_RRt = unit(R, R_top)
-    u_RRb = unit(R, R_bot)
-
-    # ── Arista central L↔R → h (superior) y g (inferior) ───────────────
-    # top: Lv[0]=c → Rv[0]=e  (boca superior)
-    # bot: Lv[2]=b → Rv[1]=d  (boca inferior)
-    # rise hacia ARRIBA → h sube, g baja (rise_sign=+1 da arriba, -1 abajo)
-    # Pero queremos DOS puntas: una sube y otra baja.
-    # El paper muestra h ARRIBA y g ABAJO del túnel central.
-    # En edge_to_V el vTM sube (n_rise*rise), vBM también sube (mismo n_rise).
-    # Para que uno suba y otro baje, llamamos dos veces o usamos signo opuesto.
-    # Solución: el vTM sube con +rise_sign y el vBM con -rise_sign.
-
-    n_rise_LR = perp_left(u_LR)  # apunta hacia arriba
-
-    # Paso 1: paralelas
-    top_LR = mk_line(Lv[0], Rv[0])
-    bot_LR = mk_line(Lv[2], Rv[1])
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 4 — FiveCand₁=B no puede ser 5
+    # ════════════════════════════════════════════════════════════════════════
     scene.play(
-        Transform(e_LR, top_LR),
-        dLv[0].animate.move_to(Lv[0]),
-        dLv[2].animate.move_to(Lv[2]),
-        dRv[0].animate.move_to(Rv[0]),
-        dRv[1].animate.move_to(Rv[1]),
-        FadeIn(bot_LR),
+        FadeOut(sub3),
+        FadeOut(note3), FadeOut(note3b),
+        run_time=0.4,
     )
-    scene.next_slide()
+    sub4 = Text('¿Por qué FiveCand₁=B no puede ser el punto 5?',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub4.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub4), run_time=0.3)
 
-    # Paso 2: vértice central en cada paralela
-    TM_LR = (Lv[0] + Rv[0]) / 2   # centro paralela superior → será h
-    BM_LR = (Lv[2] + Rv[1]) / 2   # centro paralela inferior → será g
-
-    tTL_LR = mk_line(Lv[0], TM_LR);  tTR_LR = mk_line(TM_LR, Rv[0])
-    tBL_LR = mk_line(Lv[2], BM_LR);  tBR_LR = mk_line(BM_LR, Rv[1])
-    dTM_LR = mk_dot(TM_LR, r=0.09)
-    dBM_LR = mk_dot(BM_LR, r=0.09)
-    scene.play(
-        Transform(e_LR, tTL_LR), FadeIn(tTR_LR),
-        Transform(bot_LR, tBL_LR), FadeIn(tBR_LR),
-        FadeIn(dTM_LR), FadeIn(dBM_LR),
-    )
-    scene.next_slide()
-
-    # Paso 3: ambos suben, h más arriba (punta del V superior),
-    # g a media altura entre las bocas (punta del V inferior, pero también hacia arriba)
-    vh = TM_LR + n_rise_LR * rise          # h = punta alta del V (paralela superior)
-    vg = BM_LR + n_rise_LR * (rise * 0.45) # g = punta baja del V (paralela inferior, sube menos)
-
-    vTL_LR = mk_line(Lv[0], vh);   vTR_LR = mk_line(vh, Rv[0])
-    vBL_LR = mk_line(Lv[2], vg);   vBR_LR = mk_line(vg, Rv[1])
-    dvh = mk_dot(vh, r=0.10)
-    dvg = mk_dot(vg, r=0.10)
+    num5_b    = mk_num('5', PB, direction=UP+RIGHT, buff=0.20, color=GREEN)
+    lbl_sc_a  = mk_lbl('SixCand',  PA, direction=UP+LEFT,  buff=0.10, color=ORANGE)
+    lbl_sc1_c = mk_lbl('SixCand₁', PC, direction=RIGHT,    buff=0.10, color=ORANGE)
 
     scene.play(
-        Transform(e_LR,    vTL_LR), Transform(tTR_LR, vTR_LR),
-        Transform(bot_LR,  vBL_LR), Transform(tBR_LR, vBR_LR),
-        Transform(dTM_LR,  dvh),    Transform(dBM_LR,  dvg),
+        FadeIn(num5_b),    FadeOut(lbl_fc1),
+        FadeIn(lbl_sc_a),  FadeOut(lbl_fc2),
+        FadeIn(lbl_sc1_c), FadeOut(lbl_fc),
+        run_time=0.5,
     )
+
+    seg_p4  = mk_seg(PD, PB,  color=WHITE, sw=2.5)   # D–B
+    seg_q4  = mk_seg(Pc, PB,  color=WHITE, sw=2.5)   # c–B
+    poly4   = mk_poly([PB, PD, PC])
+    seg4_blue = VGroup(
+        mk_seg(PB, PD, color=BLUE_D, sw=2.5),
+        mk_seg(PD, PC, color=BLUE_D, sw=2.5),
+        mk_seg(PC, PB, color=BLUE_D, sw=2.5),
+    )
+
+    scene.play(Create(seg_p4), Create(seg_q4), run_time=0.6)
+    scene.play(FadeIn(poly4),  run_time=0.4)
+    scene.play(Create(seg4_blue), run_time=0.6)
+
+    note4a = Text(
+        'Si B=5, candidatos a 6: SixCand(A) y SixCand₁(C).',
+        font_size=NOTE_SZ, color=GRAY_B,
+    ).to_corner(DOWN + LEFT, buff=0.55)
+    note4b = Text(
+        '→ La región (B, D, C) no puede cubrirse.  ✗',
+        font_size=NOTE_SZ, color=RED,
+    ).next_to(note4a, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(note4a), FadeIn(note4b), run_time=0.5)
+
     scene.next_slide()
 
-    # ── Ramas laterales (sin arc vertices, extremos libres) ──────────────
-    n_LLt = perp_left(u_LLt)
-    Ltop_top = L_top + n_LLt * gap
-    Ltop_bot = L_top - n_LLt * gap
-    cLLt, _ = edge_to_V(e_LLt,
-        Lv[1], Lv[0], Ltop_top, Ltop_bot,
-        dLv[1], dLv[0], None, None,
-        u_LLt, rise_sign=-1)
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 5 — FiveCand₂=A no puede ser 5
+    # ════════════════════════════════════════════════════════════════════════
+    scene.play(
+        FadeOut(sub4),
+        FadeOut(seg_p4),  FadeOut(seg_q4),
+        FadeOut(poly4),   FadeOut(seg4_blue),
+        FadeOut(note4a),  FadeOut(note4b),
+        run_time=0.4,
+    )
+    sub5 = Text('¿Por qué FiveCand₂=A no puede ser el punto 5?',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub5.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub5), run_time=0.3)
 
-    n_LLb = perp_left(u_LLb)
-    Lbot_top = L_bot + n_LLb * gap
-    Lbot_bot = L_bot - n_LLb * gap
-    cLLb, _ = edge_to_V(e_LLb,
-        Lv[2], Lv[1], Lbot_top, Lbot_bot,
-        dLv[2], dLv[1], None, None,
-        u_LLb, rise_sign=-1)
+    num5_a    = mk_num('5', PA, direction=UP+LEFT,  buff=0.20, color=GREEN)
+    lbl_sc5_b = mk_lbl('SixCand',  PB, direction=UP+RIGHT, buff=0.10, color=ORANGE)
+    lbl_sc5_c = mk_lbl('SixCand₁', PC, direction=RIGHT,    buff=0.10, color=ORANGE)
 
-    n_RRt = perp_left(u_RRt)
-    Rtop_top = R_top + n_RRt * gap
-    Rtop_bot = R_top - n_RRt * gap
-    cRRt, _ = edge_to_V(e_RRt,
-        Rv[0], Rv[2], Rtop_top, Rtop_bot,
-        dRv[0], dRv[2], None, None,
-        u_RRt, rise_sign=-1)
-
-    n_RRb = perp_left(u_RRb)
-    Rbot_top = R_bot + n_RRb * gap
-    Rbot_bot = R_bot - n_RRb * gap
-    cRRb, _ = edge_to_V(e_RRb,
-        Rv[2], Rv[1], Rbot_top, Rbot_bot,
-        dRv[2], dRv[1], None, None,
-        u_RRb, rise_sign=-1)
-
-    # ════════════════════════════════════════════════════════════════════
-    # SLIDE FINAL — diagonales
-    # El interior del túnel es el hexágono: c-h-e-d-g-b
-    # Diagonal FORZADA (paper): g-h (conecta los dos arc vertices)
-    # Para triangular el hexágono con g-h como base se necesitan además:
-    #   c-g y e-g  (triangularizan los cuadrantes con g)
-    #   b-h y d-h  (triangularizan los cuadrantes con h)
-    # Según Fig 4: sólidas = g-h, c-g, e-g (forzadas)
-    #              punteadas = b-h, d-h (otras diagonales)
-    # ════════════════════════════════════════════════════════════════════
-    # Vértices del hexágono interior del túnel:
-    va = Lv[1]   # a — externo L
-    vb = Lv[2]   # b — boca inf L
-    vc = Lv[0]   # c — boca sup L
-    vd = Rv[1]   # d — boca inf R
-    ve = Rv[0]   # e — boca sup R
-    vf = Rv[2]   # f — externo R
-
-    # Diagonales forzadas (sólidas, YELLOW): g-h, c-g, e-g
-    forced = VGroup(
-        Line(vg, vh, color=YELLOW, stroke_width=2.5).set_z_index(3),
-        Line(vc, vg, color=YELLOW, stroke_width=2.5).set_z_index(3),
-        Line(ve, vg, color=YELLOW, stroke_width=2.5).set_z_index(3),
+    scene.play(
+        FadeIn(num5_a),    FadeOut(lbl_sc_a),
+        FadeIn(lbl_sc5_b), FadeOut(num5_b),
+        FadeIn(lbl_sc5_c), FadeOut(lbl_sc1_c),
+        run_time=0.5,
     )
 
-    # Otras diagonales (punteadas, WHITE): b-h, d-h
-    other_diags = VGroup(
-        DashedLine(vb, vh, color=WHITE, stroke_width=2,
-                   dash_length=0.10).set_z_index(2),
-        DashedLine(vd, vh, color=WHITE, stroke_width=2,
-                   dash_length=0.10).set_z_index(2),
+    seg_p5  = mk_seg(PA, Pc,  color=WHITE, sw=2.5)   # A–c
+    seg_q5  = mk_seg(PA, PD,  color=WHITE, sw=2.5)   # A–D
+    poly5   = mk_poly([PD, PA, PB, PC])
+    seg5_blue = VGroup(
+        mk_seg(PD, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PB, color=BLUE_D, sw=2.5),
+        mk_seg(PB, PC, color=BLUE_D, sw=2.5),
+        mk_seg(PC, PD, color=BLUE_D, sw=2.5),
     )
 
-    legend_forced = Text("── diagonales forzadas", font_size=16, color=YELLOW)
-    legend_other  = Text("╌╌ otras diagonales",    font_size=16, color=WHITE)
-    legend = VGroup(legend_forced, legend_other).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
-    legend.to_corner(DOWN + RIGHT, buff=0.4)
+    scene.play(Create(seg_p5), Create(seg_q5), run_time=0.6)
+    scene.play(FadeIn(poly5),  run_time=0.4)
+    scene.play(Create(seg5_blue), run_time=0.6)
 
-    scene.play(Create(forced))
-    scene.play(Create(other_diags))
-    scene.play(FadeIn(legend))
+    note5a = Text(
+        'Si A=5, la región (D, A, B, C) no puede cubrirse.',
+        font_size=NOTE_SZ, color=GRAY_B,
+    ).to_corner(DOWN + LEFT, buff=0.55)
+    note5b = Text(
+        '→ Ningún candidato a 6 puede cerrar esta región.  ✗',
+        font_size=NOTE_SZ, color=RED,
+    ).next_to(note5a, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(note5a), FadeIn(note5b), run_time=0.5)
+
     scene.next_slide()
 
-    return {
-        "heading":  heading,
-        "all_objs": None,
-    }
+    # ════════════════════════════════════════════════════════════════════════
+    # SLIDE 6 — FiveCand=C no puede ser 5, conclusión
+    # ════════════════════════════════════════════════════════════════════════
+    scene.play(
+        FadeOut(sub5),
+        FadeOut(seg_p5),  FadeOut(seg_q5),
+        FadeOut(poly5),   FadeOut(seg5_blue),
+        FadeOut(note5a),  FadeOut(note5b),
+        run_time=0.4,
+    )
+    sub6 = Text('Conclusión Caso 1: ningún candidato a 5 es válido',
+                font_size=SUB_SZ, color=GRAY_B)
+    sub6.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
+    scene.play(FadeIn(sub6), run_time=0.3)
+
+    num5_c    = mk_num('5', PC, direction=RIGHT,   buff=0.22, color=GREEN)
+    lbl_sc6_a = mk_lbl('SixCand₁', PA, direction=UP+LEFT, buff=0.10, color=ORANGE)
+
+    scene.play(
+        FadeIn(num5_c),    FadeOut(lbl_sc5_c),
+        FadeIn(lbl_sc6_a), FadeOut(num5_a),
+        run_time=0.5,
+    )
+
+    seg_p6   = mk_seg(PC, Pc, color=WHITE, sw=2.5)   # C–c
+    poly6_t1 = mk_poly([PD, PC, PB], color=BLUE_D, opacity=0.18)
+    poly6_t2 = mk_poly([PD, PC, PA], color=BLUE_D, opacity=0.18)
+    seg6_blue = VGroup(
+        mk_seg(PC, PB, color=BLUE_D, sw=2.5),
+        mk_seg(PB, PD, color=BLUE_D, sw=2.5),
+        mk_seg(PD, PC, color=BLUE_D, sw=2.5),
+        mk_seg(PC, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PD, color=BLUE_D, sw=2.5),
+    )
+
+    scene.play(Create(seg_p6), run_time=0.5)
+    scene.play(FadeIn(poly6_t1), FadeIn(poly6_t2), run_time=0.5)
+    scene.play(Create(seg6_blue), run_time=0.6)
+
+    conc1 = Text(
+        'Los 3 candidatos a 5 (A, B, C) generan regiones imposibles.',
+        font_size=NOTE_SZ, color=WHITE,
+    ).to_corner(DOWN + LEFT, buff=0.65)
+    conc2 = Text(
+        '→ Si D=4, no existe triangulación secuencial.  ✗',
+        font_size=NOTE_SZ, color=RED,
+    ).next_to(conc1, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(conc1), FadeIn(conc2), run_time=0.6)
+
+    scene.next_slide()
+
+    return {'heading': heading}
 
 
 class SimpleSlides(Slide):
