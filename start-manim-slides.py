@@ -54,571 +54,581 @@ def title_slide(scene, ctx):
     scene.play(FadeIn(corner_left), FadeIn(corner_right))
     return {"title": title, "subtitle": subtitle, "corner_left": corner_left, "corner_right": corner_right}
 
-@app.function
-def steiner_slide(scene, ctx):
-    import numpy as np
 
-    scene.play(
-        FadeOut(ctx["title"]),
-        FadeOut(ctx["subtitle"]),
-        FadeOut(ctx["corner_left"]),
-        FadeOut(ctx["corner_right"])
-    )
-
-    heading = Text("Puntos Steiner", font_size=72, color=WHITE)
-    heading.move_to(ORIGIN)
-    scene.play(Write(heading))
-    scene.next_slide()
-
-    heading_small = Text("Puntos Steiner", font_size=28, color=WHITE)
-    heading_small.to_corner(UP + LEFT, buff=0.4)
-    scene.play(Transform(heading, heading_small))
-
-    points = [
-        np.array([0, 3, 0]),    # A  0
-        np.array([0, 1, 0]),    # B  1
-        np.array([1, 0, 0]),    # C  2
-        np.array([3, 0, 0]),    # D  3
-        np.array([4, 1, 0]),    # E  4
-        np.array([5, 0, 0]),    # F  5
-        np.array([7, 0, 0]),    # G  6
-        np.array([8, 1, 0]),    # H  7
-        np.array([9, 0, 0]),    # I  8
-        np.array([11, 0, 0]),   # J  9
-        np.array([12, 1, 0]),   # K  10
-        np.array([12, 3, 0]),   # L  11
-        np.array([11, 4, 0]),   # M  12
-        np.array([9, 4, 0]),    # N  13
-        np.array([8, 3, 0]),    # O  14
-        np.array([7, 4, 0]),    # P  15
-        np.array([5, 4, 0]),    # Q  16
-        np.array([4, 3, 0]),    # R  17
-        np.array([3, 4, 0]),    # S  18
-        np.array([1, 4, 0]),    # T  19
-    ]
-
-    polygon = Polygon(*points, color=WHITE, stroke_width=3)
-    polygon.move_to(ORIGIN)
-    scene.play(Create(polygon))
-    scene.next_slide()
-
-    verts = polygon.get_vertices()
-
-    red_region = Polygon(
-        verts[0], verts[1], verts[2], verts[3], verts[4], verts[17], verts[18], verts[19],
-        color=RED, stroke_width=2
-    ).set_fill(RED, opacity=0.5)
-
-    blue_region = Polygon(
-        verts[4], verts[5], verts[6], verts[7], verts[14], verts[15], verts[16], verts[17],
-        color=BLUE, stroke_width=2
-    ).set_fill(BLUE, opacity=0.5)
-
-    yellow_region = Polygon(
-        verts[7], verts[8], verts[9], verts[10], verts[11], verts[12], verts[13], verts[14],
-        color=YELLOW, stroke_width=2
-    ).set_fill(YELLOW, opacity=0.5)
-
-    label = Text("Regiones convexas: k = 3", font_size=24, color=WHITE)
-    label.to_corner(DOWN + LEFT, buff=0.5)
-
-    scene.play(FadeIn(red_region), FadeIn(blue_region), FadeIn(yellow_region))
-    scene.play(FadeIn(label))
-    scene.next_slide()
-
-    # W X Y — puntos intermedios (bbox centro (6,2), sin escala adicional)
-    bbox_center = np.array([6.0, 2.0, 0.0])
-    w_pos = np.array([2.0,  2.0,  0.0]) - bbox_center   # (-4,  0,   0)
-    wx_pos = np.array([6.0,  1.5,  0.0]) - bbox_center  # ( 0, -0.5, 0)
-    wy_pos = np.array([10.0, 2.0,  0.0]) - bbox_center  # ( 4,  0,   0)
-
-    w_dot  = Dot(w_pos,  radius=0.13, color=RED).set_z_index(3)
-    wx_dot = Dot(wx_pos, radius=0.13, color=WHITE).set_z_index(3)
-    wy_dot = Dot(wy_pos, radius=0.13, color=WHITE).set_z_index(3)
-    wx_edge = DashedLine(w_pos,  wx_pos, color=WHITE, stroke_width=2, dash_length=0.1)
-    wy_edge = DashedLine(wx_pos, wy_pos, color=WHITE, stroke_width=2, dash_length=0.1)
-
-    scene.play(FadeIn(w_dot), FadeIn(wx_dot), FadeIn(wy_dot), Create(wx_edge), Create(wy_edge))
-    scene.next_slide()
-
-    scene.play(FadeOut(w_dot), FadeOut(wx_dot), FadeOut(wy_dot), FadeOut(wx_edge), FadeOut(wy_edge))
-    scene.next_slide()
-
-    # U y V están en coordenadas del polígono original; el bbox era (0..12, 0..4),
-    # centro (6, 2), que move_to(ORIGIN) desplazó a (0,0).
-    u_pos = np.array([4.0, 2.0, 0.0]) - bbox_center   # (-2, 0, 0)
-    v_pos = np.array([8.0, 2.0, 0.0]) - bbox_center   # ( 2, 0, 0)
-
-    u_dot = Dot(u_pos, radius=0.13, color=WHITE).set_z_index(3)
-    v_dot = Dot(v_pos, radius=0.13, color=WHITE).set_z_index(3)
-    u_label = Text("", font_size=22, color=WHITE).next_to(u_dot, DOWN, buff=0.15)
-    v_label = Text("", font_size=22, color=WHITE).next_to(v_dot, DOWN, buff=0.15)
-
-    uv_rect = RoundedRectangle(corner_radius=0.6, width=5.2, height=1.4, color=WHITE, stroke_width=2)
-    uv_rect.move_to(ORIGIN)
-
-    scene.play(FadeIn(u_dot), FadeIn(v_dot), Write(u_label), Write(v_label))
-    scene.next_slide()
-
-    # Aristas desde U → S T A B C D
-    edges_u_left = [
-        DashedLine(u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
-        for i in [18, 19, 0, 1, 2, 3]
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in edges_u_left], lag_ratio=0.25))
-    scene.next_slide()
-
-    # Aristas desde U → F G H V O P Q
-    edges_u_mid = [
-        DashedLine(u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
-        for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in edges_u_mid], lag_ratio=0.25))
-    scene.next_slide()
-
-    # Aristas desde V → I J K L M N
-    edges_v_right = [
-        DashedLine(v_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
-        for i in [8, 9, 10, 11, 12, 13]
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in edges_v_right], lag_ratio=0.25))
-
-    steiner_label = Text("Puntos Steiner: k-1=2", font_size=24, color=WHITE)
-    steiner_label.to_corner(DOWN + RIGHT, buff=0.5)
-    scene.play(FadeIn(steiner_label), Create(uv_rect))
-    scene.next_slide()
-
-    scene.play(FadeOut(uv_rect))
-
-    new_u_pos = verts[17]
-    new_edges_u_left = [
-        DashedLine(new_u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
-        for i in [18, 19, 0, 1, 2, 3]
-    ]
-    new_edges_u_mid = [
-        DashedLine(new_u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
-        for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
-    ]
-
-    new_steiner = Text("Puntos Steiner: k-2=1", font_size=24, color=WHITE)
-    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
-    scene.play(
-        u_dot.animate.move_to(new_u_pos),
-        Transform(steiner_label, new_steiner),
-        *[Transform(old, new) for old, new in zip(edges_u_left, new_edges_u_left)],
-        *[Transform(old, new) for old, new in zip(edges_u_mid, new_edges_u_mid)],
-    )
-    scene.next_slide()
-
-    return {
-        "heading": heading,
-        "polygon": polygon,
-        "red_region": red_region,
-        "blue_region": blue_region,
-        "yellow_region": yellow_region,
-        "label": label,
-        "u_dot": u_dot, "v_dot": v_dot,
-        "u_label": u_label, "v_label": v_label,
-        "edges_u_left": edges_u_left,
-        "edges_u_mid": edges_u_mid,
-        "edges_v_right": edges_v_right,
-        "steiner_label": steiner_label,
-    }
-
-
-@app.function
-def steiner_slide_2(scene, ctx):
-    import numpy as np
-
-    scene.play(
-        FadeOut(ctx["polygon"]),
-        FadeOut(ctx["red_region"]),
-        FadeOut(ctx["blue_region"]),
-        FadeOut(ctx["yellow_region"]),
-        FadeOut(ctx["u_dot"]),
-        FadeOut(ctx["v_dot"]),
-        FadeOut(ctx["u_label"]),
-        FadeOut(ctx["v_label"]),
-        *[FadeOut(e) for e in ctx["edges_u_left"]],
-        *[FadeOut(e) for e in ctx["edges_u_mid"]],
-        *[FadeOut(e) for e in ctx["edges_v_right"]],
-    )
-
-    points = [
-        np.array([0,     0,    0]),   # A  0
-        np.array([0,     7,    0]),   # B  1
-        np.array([2,     7,    0]),   # C  2
-        np.array([2,     2,    0]),   # D  3
-        np.array([4,     2,    0]),   # E  4
-        np.array([4,     7,    0]),   # F  5
-        np.array([6,     7,    0]),   # G  6
-        np.array([6,     2,    0]),   # H  7
-        np.array([8,     2,    0]),   # I  8
-        np.array([8,     7,    0]),   # J  9
-        np.array([10,    7,    0]),   # K  10
-        np.array([10,    2,    0]),   # L  11
-        np.array([12,    2,    0]),   # M  12
-        np.array([12,    7,    0]),   # N  13
-        np.array([14,    7,    0]),   # O  14
-        np.array([14,    2,    0]),   # P  15
-        np.array([16,    2,    0]),   # Q  16
-        np.array([16,    7,    0]),   # R  17
-        np.array([18,    7,    0]),   # S  18
-        np.array([18,    0,    0]),   # T  19
-    ]
-
-    polygon2 = Polygon(*points, color=WHITE, stroke_width=3)
-    polygon2.move_to(ORIGIN)
-    polygon2.scale(0.65)
-    scene.play(Create(polygon2))
-    scene.next_slide()
-
-    v = polygon2.get_vertices()
-
-    red_region = Polygon(
-        v[0], v[1], v[2], v[3],
-        color=RED, stroke_width=2,
-    ).set_fill(RED, opacity=0.5)
-
-    gold_region = Polygon(
-        v[0], v[3], v[4], v[7], v[8], v[11], v[12], v[15], v[16], v[19],
-        color=GOLD, stroke_width=2,
-    ).set_fill(GOLD, opacity=0.5)
-
-    yellow_region = Polygon(
-        v[4], v[5], v[6], v[7],
-        color=YELLOW, stroke_width=2,
-    ).set_fill(YELLOW, opacity=0.5)
-
-    green_region = Polygon(
-        v[8], v[9], v[10], v[11],
-        color=GREEN, stroke_width=2,
-    ).set_fill(GREEN, opacity=0.5)
-
-    teal_region = Polygon(
-        v[12], v[13], v[14], v[15],
-        color=TEAL, stroke_width=2,
-    ).set_fill(TEAL, opacity=0.5)
-
-    blue_region = Polygon(
-        v[16], v[17], v[18], v[19],
-        color=BLUE, stroke_width=2,
-    ).set_fill(BLUE, opacity=0.5)
-
-    scene.play(
-        FadeIn(red_region), FadeIn(gold_region), FadeIn(yellow_region),
-        FadeIn(green_region), FadeIn(teal_region), FadeIn(blue_region),
-    )
-
-    new_label = Text("Regiones convexas: k = 6", font_size=24, color=WHITE)
-    new_label.to_corner(DOWN + LEFT, buff=0.5)
-    scene.play(Transform(ctx["label"], new_label))
-    scene.next_slide()
-
-    # Posiciones de los puntos Steiner en coordenadas de escena
-    # bbox original: (0..18, 0..7) → centro (9, 3.5); luego scale 0.65
-    def sc(px, py):
-        return (np.array([px, py, 0.0]) - np.array([9.0, 3.5, 0.0])) * 0.65
-
-    u_pos = sc(1,  1)
-    v_pos = sc(5,  2)
-    x_pos = sc(9,  2)
-    y_pos = sc(13, 2)
-    z_pos = sc(17, 1)
-
-    u_dot = Dot(u_pos, radius=0.10, color=WHITE).set_z_index(3)
-    v_dot = Dot(v_pos, radius=0.10, color=WHITE).set_z_index(3)
-    x_dot = Dot(x_pos, radius=0.10, color=WHITE).set_z_index(3)
-    y_dot = Dot(y_pos, radius=0.10, color=WHITE).set_z_index(3)
-    z_dot = Dot(z_pos, radius=0.10, color=WHITE).set_z_index(3)
-
-    new_steiner = Text("Puntos Steiner: k-1=5", font_size=24, color=WHITE)
-    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
-
-    scene.play(
-        FadeIn(u_dot), FadeIn(v_dot), FadeIn(x_dot), FadeIn(y_dot), FadeIn(z_dot),
-        Transform(ctx["steiner_label"], new_steiner),
-    )
-    scene.next_slide()
-
-    def edge(a, b):
-        return DashedLine(a, b, color=WHITE, stroke_width=1.5, dash_length=0.1)
-
-    # Batch 1: aristas "locales" de cada punto Steiner a sus dos vecinos de región
-    batch1 = [
-        edge(u_pos, v[0]),   # U→A
-        edge(u_pos, v[3]),   # U→D
-        edge(v_pos, v[4]),   # V→E
-        edge(v_pos, v[7]),   # V→H
-        edge(x_pos, v[8]),   # X→I
-        edge(x_pos, v[11]),  # X→L
-        edge(y_pos, v[12]),  # Y→M
-        edge(y_pos, v[15]),  # Y→P
-        edge(z_pos, v[16]),  # Z→Q
-        edge(z_pos, v[19]),  # Z→T
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in batch1], lag_ratio=0.15))
-    scene.next_slide()
-
-    # Batch 2: aristas largas desde U
-    batch2 = [
-        edge(u_pos, v[1]),   # U→B
-        edge(u_pos, v[2]),   # U→C
-        edge(u_pos, v[4]),   # U→E
-        edge(u_pos, v_pos),  # U→V
-        edge(u_pos, v[7]),   # U→H
-        edge(u_pos, v[8]),   # U→I
-        edge(u_pos, x_pos),  # U→X
-        edge(u_pos, v[11]),  # U→L
-        edge(u_pos, v[12]),  # U→M
-        edge(u_pos, y_pos),  # U→Y
-        edge(u_pos, v[15]),  # U→P
-        edge(u_pos, v[16]),  # U→Q
-        edge(u_pos, z_pos),  # U→Z
-        edge(u_pos, v[19]),  # U→T
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in batch2], lag_ratio=0.1))
-    scene.next_slide()
-
-    # Batch 3: V→F, V→G
-    batch3 = [edge(v_pos, v[5]), edge(v_pos, v[6])]
-    scene.play(LaggedStart(*[Create(e) for e in batch3], lag_ratio=0.3))
-    scene.next_slide()
-
-    # Batch 4: X→J, X→K
-    batch4 = [edge(x_pos, v[9]), edge(x_pos, v[10])]
-    scene.play(LaggedStart(*[Create(e) for e in batch4], lag_ratio=0.3))
-    scene.next_slide()
-
-    # Batch 5: Y→N, Y→O
-    batch5 = [edge(y_pos, v[13]), edge(y_pos, v[14])]
-    scene.play(LaggedStart(*[Create(e) for e in batch5], lag_ratio=0.3))
-    scene.next_slide()
-
-    # Batch 6: Z→R, Z→S
-    batch6 = [edge(z_pos, v[17]), edge(z_pos, v[18])]
-    scene.play(LaggedStart(*[Create(e) for e in batch6], lag_ratio=0.3))
-    scene.next_slide()
-
-    # Remover todas las aristas punteadas
-    all_edges = batch1 + batch2 + batch3 + batch4 + batch5 + batch6
-    scene.play(*[FadeOut(e) for e in all_edges])
-    scene.next_slide()
-
-    # Bajar V, X, Y una unidad en coords originales → 0.75 en coords de escena
-    new_v_pos = sc(5,  1)
-    new_x_pos = sc(9,  1)
-    new_y_pos = sc(13, 1)
-
-    scene.play(
-        v_dot.animate.shift(DOWN * 0.75),
-        x_dot.animate.shift(DOWN * 0.75),
-        y_dot.animate.shift(DOWN * 0.75),
-    )
-    scene.next_slide()
-
-    # Nuevas aristas en un solo paso
-    new_edges = [
-        # U → A B C D E V
-        edge(u_pos,    v[0]),      edge(u_pos,    v[1]),
-        edge(u_pos,    v[2]),      edge(u_pos,    v[3]),
-        edge(u_pos,    v[4]),      edge(u_pos,    new_v_pos),
-        # V → A E F G H I X
-        edge(new_v_pos, v[0]),     edge(new_v_pos, v[4]),
-        edge(new_v_pos, v[5]),     edge(new_v_pos, v[6]),
-        edge(new_v_pos, v[7]),     edge(new_v_pos, v[8]),
-        edge(new_v_pos, new_x_pos),
-        # X → A I J K L M Y T
-        edge(new_x_pos, v[0]),     edge(new_x_pos, v[8]),
-        edge(new_x_pos, v[9]),     edge(new_x_pos, v[10]),
-        edge(new_x_pos, v[11]),    edge(new_x_pos, v[12]),
-        edge(new_x_pos, new_y_pos), edge(new_x_pos, v[19]),
-        # Y → M N O P Q Z T
-        edge(new_y_pos, v[12]),    edge(new_y_pos, v[13]),
-        edge(new_y_pos, v[14]),    edge(new_y_pos, v[15]),
-        edge(new_y_pos, v[16]),    edge(new_y_pos, z_pos),
-        edge(new_y_pos, v[19]),
-        # Z → Q R S T
-        edge(z_pos, v[16]),        edge(z_pos, v[17]),
-        edge(z_pos, v[18]),        edge(z_pos, v[19]),
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in new_edges], lag_ratio=0.04))
-    scene.next_slide()
-
-    return {
-        "heading":       ctx["heading"],
-        "label":         ctx["label"],
-        "steiner_label": ctx["steiner_label"],
-        "polygon":       polygon2,
-        "regions":       [red_region, gold_region, yellow_region, green_region, teal_region, blue_region],
-        "steiner_dots":  [u_dot, v_dot, x_dot, y_dot, z_dot],
-        "steiner_edges": new_edges,
-    }
-
-
-@app.function
-def steiner_slide_3(scene, ctx):
-    import numpy as np
-
-    new_label = Text("Regiones convexas: k = 5", font_size=24, color=WHITE)
-    new_label.to_corner(DOWN + LEFT, buff=0.5)
-    new_steiner = Text("Puntos Steiner: k=5", font_size=24, color=WHITE)
-    new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
-
-    scene.play(
-        FadeOut(ctx["polygon"]),
-        *[FadeOut(r) for r in ctx["regions"]],
-        *[FadeOut(d) for d in ctx["steiner_dots"]],
-        *[FadeOut(e) for e in ctx["steiner_edges"]],
-        Transform(ctx["label"], new_label),
-        Transform(ctx["steiner_label"], new_steiner),
-    )
-
-    A = np.array([0, 3, 0])
-    B = np.array([2, 0, 0])
-    C = np.array([2, 4, 0])
-    D = np.array([5, 4, 0])
-    E = np.array([5, 2, 0])
-    F = np.array([6, 0, 0])
-    G = np.array([8, 3, 0])
-
-    # Polygon outline: A→B→F→G→E→D→C→A
-    polygon = Polygon(A, B, F, G, E, D, C, color=WHITE, stroke_width=3)
-    polygon.move_to(ORIGIN)
-    polygon.scale(1.3)
-    scene.play(Create(polygon))
-    scene.next_slide()
-
-    # Vertices in order: A=0, B=1, F=2, G=3, E=4, D=5, C=6
-    v = polygon.get_vertices()
-
-    def dashed(a, b):
-        return DashedLine(a, b, color=YELLOW, stroke_width=2, dash_length=0.15)
-
-    dashed_edges = [
-        dashed(v[1], v[6]),  # B → C
-        dashed(v[6], v[4]),  # C → E
-        dashed(v[1], v[4]),  # B → E
-        dashed(v[4], v[2]),  # E → F
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in dashed_edges], lag_ratio=0.3))
-    scene.next_slide()
-
-    # Scale polygon and dashed edges by 0.65
-    group = VGroup(polygon, *dashed_edges)
-    scene.play(group.animate.scale(0.65))
-    scene.next_slide()
-
-    # After full scale (1.3 * 0.65 = 0.845), original bbox center was (4, 2)
-    def sc(px, py):
-        return np.array([(px - 4.0) * 0.845, (py - 2.0) * 0.845, 0.0])
-
-    # Incenter and inradius in original polygon coordinates
-    def incenter_inradius(P1, P2, P3):
-        a = np.linalg.norm(P2 - P3)
-        b = np.linalg.norm(P1 - P3)
-        c = np.linalg.norm(P1 - P2)
-        I = (a * P1 + b * P2 + c * P3) / (a + b + c)
-        area = 0.5 * abs((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0]))
-        r = area / ((a + b + c) / 2)
-        return I[:2], r
-
-    ic_xy, ic_r = incenter_inradius(A, C, B)
-    id_xy, id_r = incenter_inradius(C, B, E)
-    ie_xy, ie_r = incenter_inradius(D, C, E)
-    ir_xy, ir_r = incenter_inradius(E, F, G)
-    is_xy, is_r = incenter_inradius(E, B, F)
-
-    c_center = sc(ic_xy[0], ic_xy[1])
-    d_center = sc(id_xy[0], id_xy[1])
-    e_center = sc(ie_xy[0], ie_xy[1])
-    r_center = sc(ir_xy[0], ir_xy[1])
-    s_center = sc(is_xy[0], is_xy[1])
-
-    circle_c = Circle(radius=ic_r * 0.845, color=BLUE, stroke_width=2).move_to(c_center)
-    dot_c = Dot(c_center, radius=0.08, color=BLUE).set_z_index(3)
-
-    circle_d = Circle(radius=id_r * 0.845, color=RED, stroke_width=2).move_to(d_center)
-    dot_d = Dot(d_center, radius=0.08, color=RED).set_z_index(3)
-
-    circle_e = Circle(radius=ie_r * 0.845, color=GREEN, stroke_width=2).move_to(e_center)
-    dot_e = Dot(e_center, radius=0.08, color=GREEN).set_z_index(3)
-
-    circle_r = Circle(radius=ir_r * 0.845, color=TEAL, stroke_width=2).move_to(r_center)
-    dot_r = Dot(r_center, radius=0.08, color=TEAL).set_z_index(3)
-
-    circle_s = Circle(radius=is_r * 0.845, color=GOLD, stroke_width=2).move_to(s_center)
-    dot_s = Dot(s_center, radius=0.08, color=GOLD).set_z_index(3)
-
-    scene.play(
-        LaggedStart(
-            Create(circle_c), FadeIn(dot_c),
-            Create(circle_d), FadeIn(dot_d),
-            Create(circle_e), FadeIn(dot_e),
-            Create(circle_r), FadeIn(dot_r),
-            Create(circle_s), FadeIn(dot_s),
-            lag_ratio=0.4,
+@app.cell
+def _(RoundedRectangle):
+    def steiner_slide(scene, ctx):
+        import numpy as np
+
+        scene.play(
+            FadeOut(ctx["title"]),
+            FadeOut(ctx["subtitle"]),
+            FadeOut(ctx["corner_left"]),
+            FadeOut(ctx["corner_right"])
         )
-    )
-    scene.next_slide()
 
-    # Fade out circles, keep center dots
-    scene.play(
-        FadeOut(circle_c), FadeOut(circle_d), FadeOut(circle_e),
-        FadeOut(circle_r), FadeOut(circle_s),
-    )
-    scene.next_slide()
+        heading = Text("Puntos Steiner", font_size=72, color=WHITE)
+        heading.move_to(ORIGIN)
+        scene.play(Write(heading))
+        scene.next_slide()
 
-    # Vertex positions in scene coords after full scale
-    A_pos = sc(0, 3)
-    B_pos = sc(2, 0)
-    C_pos = sc(2, 4)
-    D_pos = sc(5, 4)
-    E_pos = sc(5, 2)
-    F_pos = sc(6, 0)
-    G_pos = sc(8, 3)
+        heading_small = Text("Puntos Steiner", font_size=28, color=WHITE)
+        heading_small.to_corner(UP + LEFT, buff=0.4)
+        scene.play(Transform(heading, heading_small))
 
-    def bdash(a, b):
-        return DashedLine(a, b, color=BLUE, stroke_width=1.5, dash_length=0.12)
+        points = [
+            np.array([0, 3, 0]),    # A  0
+            np.array([0, 1, 0]),    # B  1
+            np.array([1, 0, 0]),    # C  2
+            np.array([3, 0, 0]),    # D  3
+            np.array([4, 1, 0]),    # E  4
+            np.array([5, 0, 0]),    # F  5
+            np.array([7, 0, 0]),    # G  6
+            np.array([8, 1, 0]),    # H  7
+            np.array([9, 0, 0]),    # I  8
+            np.array([11, 0, 0]),   # J  9
+            np.array([12, 1, 0]),   # K  10
+            np.array([12, 3, 0]),   # L  11
+            np.array([11, 4, 0]),   # M  12
+            np.array([9, 4, 0]),    # N  13
+            np.array([8, 3, 0]),    # O  14
+            np.array([7, 4, 0]),    # P  15
+            np.array([5, 4, 0]),    # Q  16
+            np.array([4, 3, 0]),    # R  17
+            np.array([3, 4, 0]),    # S  18
+            np.array([1, 4, 0]),    # T  19
+        ]
 
-    center_edges = [
-        bdash(c_center, A_pos), bdash(c_center, B_pos), bdash(c_center, C_pos),
-        bdash(d_center, C_pos), bdash(d_center, B_pos), bdash(d_center, E_pos),
-        bdash(e_center, D_pos), bdash(e_center, C_pos), bdash(e_center, E_pos),
-        bdash(r_center, E_pos), bdash(r_center, F_pos), bdash(r_center, G_pos),
-        bdash(s_center, F_pos), bdash(s_center, B_pos), bdash(s_center, E_pos),
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in center_edges], lag_ratio=0.15))
-    scene.next_slide()
+        polygon = Polygon(*points, color=WHITE, stroke_width=3)
+        polygon.move_to(ORIGIN)
+        scene.play(Create(polygon))
+        scene.next_slide()
 
-    # Red dashed edges between circumcenters
-    def rdash(a, b):
-        return DashedLine(a, b, color=RED, stroke_width=2, dash_length=0.12)
+        verts = polygon.get_vertices()
 
-    red_edges = [
-        rdash(c_center, d_center),
-        rdash(d_center, e_center),
-        rdash(d_center, s_center),
-        rdash(s_center, r_center),
-    ]
-    scene.play(LaggedStart(*[Create(e) for e in red_edges], lag_ratio=0.3))
-    scene.next_slide()
+        red_region = Polygon(
+            verts[0], verts[1], verts[2], verts[3], verts[4], verts[17], verts[18], verts[19],
+            color=RED, stroke_width=2
+        ).set_fill(RED, opacity=0.5)
 
-    # Fade out yellow dashed edges
-    scene.play(*[FadeOut(e) for e in dashed_edges])
-    scene.next_slide()
+        blue_region = Polygon(
+            verts[4], verts[5], verts[6], verts[7], verts[14], verts[15], verts[16], verts[17],
+            color=BLUE, stroke_width=2
+        ).set_fill(BLUE, opacity=0.5)
 
-    return {
-        "heading":       ctx["heading"],
-        "label":         ctx["label"],
-        "steiner_label": ctx["steiner_label"],
-        "polygon":       polygon,
-        "dashed_edges":  dashed_edges,
-        "circles":       [circle_c, circle_d, circle_e, circle_r, circle_s],
-        "circle_dots":   [dot_c, dot_d, dot_e, dot_r, dot_s],
-        "center_edges":  center_edges,
-        "red_edges":     red_edges,
-    }
+        yellow_region = Polygon(
+            verts[7], verts[8], verts[9], verts[10], verts[11], verts[12], verts[13], verts[14],
+            color=YELLOW, stroke_width=2
+        ).set_fill(YELLOW, opacity=0.5)
+
+        label = Text("Regiones convexas: k = 3", font_size=24, color=WHITE)
+        label.to_corner(DOWN + LEFT, buff=0.5)
+
+        scene.play(FadeIn(red_region), FadeIn(blue_region), FadeIn(yellow_region))
+        scene.play(FadeIn(label))
+        scene.next_slide()
+
+        # W X Y — puntos intermedios (bbox centro (6,2), sin escala adicional)
+        bbox_center = np.array([6.0, 2.0, 0.0])
+        w_pos = np.array([2.0,  2.0,  0.0]) - bbox_center   # (-4,  0,   0)
+        wx_pos = np.array([6.0,  1.5,  0.0]) - bbox_center  # ( 0, -0.5, 0)
+        wy_pos = np.array([10.0, 2.0,  0.0]) - bbox_center  # ( 4,  0,   0)
+
+        w_dot  = Dot(w_pos,  radius=0.13, color=RED).set_z_index(3)
+        wx_dot = Dot(wx_pos, radius=0.13, color=WHITE).set_z_index(3)
+        wy_dot = Dot(wy_pos, radius=0.13, color=WHITE).set_z_index(3)
+        wx_edge = DashedLine(w_pos,  wx_pos, color=WHITE, stroke_width=2, dash_length=0.1)
+        wy_edge = DashedLine(wx_pos, wy_pos, color=WHITE, stroke_width=2, dash_length=0.1)
+
+        scene.play(FadeIn(w_dot), FadeIn(wx_dot), FadeIn(wy_dot), Create(wx_edge), Create(wy_edge))
+        scene.next_slide()
+
+        scene.play(FadeOut(w_dot), FadeOut(wx_dot), FadeOut(wy_dot), FadeOut(wx_edge), FadeOut(wy_edge))
+        scene.next_slide()
+
+        # U y V están en coordenadas del polígono original; el bbox era (0..12, 0..4),
+        # centro (6, 2), que move_to(ORIGIN) desplazó a (0,0).
+        u_pos = np.array([4.0, 2.0, 0.0]) - bbox_center   # (-2, 0, 0)
+        v_pos = np.array([8.0, 2.0, 0.0]) - bbox_center   # ( 2, 0, 0)
+
+        u_dot = Dot(u_pos, radius=0.13, color=WHITE).set_z_index(3)
+        v_dot = Dot(v_pos, radius=0.13, color=WHITE).set_z_index(3)
+        u_label = Text("", font_size=22, color=WHITE).next_to(u_dot, DOWN, buff=0.15)
+        v_label = Text("", font_size=22, color=WHITE).next_to(v_dot, DOWN, buff=0.15)
+
+        uv_rect = RoundedRectangle(corner_radius=0.6, width=5.2, height=1.4, color=WHITE, stroke_width=2)
+        uv_rect.move_to(ORIGIN)
+
+        scene.play(FadeIn(u_dot), FadeIn(v_dot), Write(u_label), Write(v_label))
+        scene.next_slide()
+
+        # Aristas desde U → S T A B C D
+        edges_u_left = [
+            DashedLine(u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+            for i in [18, 19, 0, 1, 2, 3]
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in edges_u_left], lag_ratio=0.25))
+        scene.next_slide()
+
+        # Aristas desde U → F G H V O P Q
+        edges_u_mid = [
+            DashedLine(u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
+            for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in edges_u_mid], lag_ratio=0.25))
+        scene.next_slide()
+
+        # Aristas desde V → I J K L M N
+        edges_v_right = [
+            DashedLine(v_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+            for i in [8, 9, 10, 11, 12, 13]
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in edges_v_right], lag_ratio=0.25))
+
+        steiner_label = Text("Puntos Steiner: k-1=2", font_size=24, color=WHITE)
+        steiner_label.to_corner(DOWN + RIGHT, buff=0.5)
+        scene.play(FadeIn(steiner_label), Create(uv_rect))
+        scene.next_slide()
+
+        scene.play(FadeOut(uv_rect))
+
+        new_u_pos = verts[17]
+        new_edges_u_left = [
+            DashedLine(new_u_pos, verts[i], color=WHITE, stroke_width=1.5, dash_length=0.1)
+            for i in [18, 19, 0, 1, 2, 3]
+        ]
+        new_edges_u_mid = [
+            DashedLine(new_u_pos, target, color=WHITE, stroke_width=1.5, dash_length=0.1)
+            for target in [verts[5], verts[6], verts[7], v_pos, verts[14], verts[15], verts[16]]
+        ]
+
+        new_steiner = Text("Puntos Steiner: k-2=1", font_size=24, color=WHITE)
+        new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+        scene.play(
+            u_dot.animate.move_to(new_u_pos),
+            Transform(steiner_label, new_steiner),
+            *[Transform(old, new) for old, new in zip(edges_u_left, new_edges_u_left)],
+            *[Transform(old, new) for old, new in zip(edges_u_mid, new_edges_u_mid)],
+        )
+        scene.next_slide()
+
+        return {
+            "heading": heading,
+            "polygon": polygon,
+            "red_region": red_region,
+            "blue_region": blue_region,
+            "yellow_region": yellow_region,
+            "label": label,
+            "u_dot": u_dot, "v_dot": v_dot,
+            "u_label": u_label, "v_label": v_label,
+            "edges_u_left": edges_u_left,
+            "edges_u_mid": edges_u_mid,
+            "edges_v_right": edges_v_right,
+            "steiner_label": steiner_label,
+        }
+
+    return
+
+
+@app.cell
+def _(GOLD, TEAL):
+    def steiner_slide_2(scene, ctx):
+        import numpy as np
+
+        scene.play(
+            FadeOut(ctx["polygon"]),
+            FadeOut(ctx["red_region"]),
+            FadeOut(ctx["blue_region"]),
+            FadeOut(ctx["yellow_region"]),
+            FadeOut(ctx["u_dot"]),
+            FadeOut(ctx["v_dot"]),
+            FadeOut(ctx["u_label"]),
+            FadeOut(ctx["v_label"]),
+            *[FadeOut(e) for e in ctx["edges_u_left"]],
+            *[FadeOut(e) for e in ctx["edges_u_mid"]],
+            *[FadeOut(e) for e in ctx["edges_v_right"]],
+        )
+
+        points = [
+            np.array([0,     0,    0]),   # A  0
+            np.array([0,     7,    0]),   # B  1
+            np.array([2,     7,    0]),   # C  2
+            np.array([2,     2,    0]),   # D  3
+            np.array([4,     2,    0]),   # E  4
+            np.array([4,     7,    0]),   # F  5
+            np.array([6,     7,    0]),   # G  6
+            np.array([6,     2,    0]),   # H  7
+            np.array([8,     2,    0]),   # I  8
+            np.array([8,     7,    0]),   # J  9
+            np.array([10,    7,    0]),   # K  10
+            np.array([10,    2,    0]),   # L  11
+            np.array([12,    2,    0]),   # M  12
+            np.array([12,    7,    0]),   # N  13
+            np.array([14,    7,    0]),   # O  14
+            np.array([14,    2,    0]),   # P  15
+            np.array([16,    2,    0]),   # Q  16
+            np.array([16,    7,    0]),   # R  17
+            np.array([18,    7,    0]),   # S  18
+            np.array([18,    0,    0]),   # T  19
+        ]
+
+        polygon2 = Polygon(*points, color=WHITE, stroke_width=3)
+        polygon2.move_to(ORIGIN)
+        polygon2.scale(0.65)
+        scene.play(Create(polygon2))
+        scene.next_slide()
+
+        v = polygon2.get_vertices()
+
+        red_region = Polygon(
+            v[0], v[1], v[2], v[3],
+            color=RED, stroke_width=2,
+        ).set_fill(RED, opacity=0.5)
+
+        gold_region = Polygon(
+            v[0], v[3], v[4], v[7], v[8], v[11], v[12], v[15], v[16], v[19],
+            color=GOLD, stroke_width=2,
+        ).set_fill(GOLD, opacity=0.5)
+
+        yellow_region = Polygon(
+            v[4], v[5], v[6], v[7],
+            color=YELLOW, stroke_width=2,
+        ).set_fill(YELLOW, opacity=0.5)
+
+        green_region = Polygon(
+            v[8], v[9], v[10], v[11],
+            color=GREEN, stroke_width=2,
+        ).set_fill(GREEN, opacity=0.5)
+
+        teal_region = Polygon(
+            v[12], v[13], v[14], v[15],
+            color=TEAL, stroke_width=2,
+        ).set_fill(TEAL, opacity=0.5)
+
+        blue_region = Polygon(
+            v[16], v[17], v[18], v[19],
+            color=BLUE, stroke_width=2,
+        ).set_fill(BLUE, opacity=0.5)
+
+        scene.play(
+            FadeIn(red_region), FadeIn(gold_region), FadeIn(yellow_region),
+            FadeIn(green_region), FadeIn(teal_region), FadeIn(blue_region),
+        )
+
+        new_label = Text("Regiones convexas: k = 6", font_size=24, color=WHITE)
+        new_label.to_corner(DOWN + LEFT, buff=0.5)
+        scene.play(Transform(ctx["label"], new_label))
+        scene.next_slide()
+
+        # Posiciones de los puntos Steiner en coordenadas de escena
+        # bbox original: (0..18, 0..7) → centro (9, 3.5); luego scale 0.65
+        def sc(px, py):
+            return (np.array([px, py, 0.0]) - np.array([9.0, 3.5, 0.0])) * 0.65
+
+        u_pos = sc(1,  1)
+        v_pos = sc(5,  2)
+        x_pos = sc(9,  2)
+        y_pos = sc(13, 2)
+        z_pos = sc(17, 1)
+
+        u_dot = Dot(u_pos, radius=0.10, color=WHITE).set_z_index(3)
+        v_dot = Dot(v_pos, radius=0.10, color=WHITE).set_z_index(3)
+        x_dot = Dot(x_pos, radius=0.10, color=WHITE).set_z_index(3)
+        y_dot = Dot(y_pos, radius=0.10, color=WHITE).set_z_index(3)
+        z_dot = Dot(z_pos, radius=0.10, color=WHITE).set_z_index(3)
+
+        new_steiner = Text("Puntos Steiner: k-1=5", font_size=24, color=WHITE)
+        new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+
+        scene.play(
+            FadeIn(u_dot), FadeIn(v_dot), FadeIn(x_dot), FadeIn(y_dot), FadeIn(z_dot),
+            Transform(ctx["steiner_label"], new_steiner),
+        )
+        scene.next_slide()
+
+        def edge(a, b):
+            return DashedLine(a, b, color=WHITE, stroke_width=1.5, dash_length=0.1)
+
+        # Batch 1: aristas "locales" de cada punto Steiner a sus dos vecinos de región
+        batch1 = [
+            edge(u_pos, v[0]),   # U→A
+            edge(u_pos, v[3]),   # U→D
+            edge(v_pos, v[4]),   # V→E
+            edge(v_pos, v[7]),   # V→H
+            edge(x_pos, v[8]),   # X→I
+            edge(x_pos, v[11]),  # X→L
+            edge(y_pos, v[12]),  # Y→M
+            edge(y_pos, v[15]),  # Y→P
+            edge(z_pos, v[16]),  # Z→Q
+            edge(z_pos, v[19]),  # Z→T
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in batch1], lag_ratio=0.15))
+        scene.next_slide()
+
+        # Batch 2: aristas largas desde U
+        batch2 = [
+            edge(u_pos, v[1]),   # U→B
+            edge(u_pos, v[2]),   # U→C
+            edge(u_pos, v[4]),   # U→E
+            edge(u_pos, v_pos),  # U→V
+            edge(u_pos, v[7]),   # U→H
+            edge(u_pos, v[8]),   # U→I
+            edge(u_pos, x_pos),  # U→X
+            edge(u_pos, v[11]),  # U→L
+            edge(u_pos, v[12]),  # U→M
+            edge(u_pos, y_pos),  # U→Y
+            edge(u_pos, v[15]),  # U→P
+            edge(u_pos, v[16]),  # U→Q
+            edge(u_pos, z_pos),  # U→Z
+            edge(u_pos, v[19]),  # U→T
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in batch2], lag_ratio=0.1))
+        scene.next_slide()
+
+        # Batch 3: V→F, V→G
+        batch3 = [edge(v_pos, v[5]), edge(v_pos, v[6])]
+        scene.play(LaggedStart(*[Create(e) for e in batch3], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Batch 4: X→J, X→K
+        batch4 = [edge(x_pos, v[9]), edge(x_pos, v[10])]
+        scene.play(LaggedStart(*[Create(e) for e in batch4], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Batch 5: Y→N, Y→O
+        batch5 = [edge(y_pos, v[13]), edge(y_pos, v[14])]
+        scene.play(LaggedStart(*[Create(e) for e in batch5], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Batch 6: Z→R, Z→S
+        batch6 = [edge(z_pos, v[17]), edge(z_pos, v[18])]
+        scene.play(LaggedStart(*[Create(e) for e in batch6], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Remover todas las aristas punteadas
+        all_edges = batch1 + batch2 + batch3 + batch4 + batch5 + batch6
+        scene.play(*[FadeOut(e) for e in all_edges])
+        scene.next_slide()
+
+        # Bajar V, X, Y una unidad en coords originales → 0.75 en coords de escena
+        new_v_pos = sc(5,  1)
+        new_x_pos = sc(9,  1)
+        new_y_pos = sc(13, 1)
+
+        scene.play(
+            v_dot.animate.shift(DOWN * 0.75),
+            x_dot.animate.shift(DOWN * 0.75),
+            y_dot.animate.shift(DOWN * 0.75),
+        )
+        scene.next_slide()
+
+        # Nuevas aristas en un solo paso
+        new_edges = [
+            # U → A B C D E V
+            edge(u_pos,    v[0]),      edge(u_pos,    v[1]),
+            edge(u_pos,    v[2]),      edge(u_pos,    v[3]),
+            edge(u_pos,    v[4]),      edge(u_pos,    new_v_pos),
+            # V → A E F G H I X
+            edge(new_v_pos, v[0]),     edge(new_v_pos, v[4]),
+            edge(new_v_pos, v[5]),     edge(new_v_pos, v[6]),
+            edge(new_v_pos, v[7]),     edge(new_v_pos, v[8]),
+            edge(new_v_pos, new_x_pos),
+            # X → A I J K L M Y T
+            edge(new_x_pos, v[0]),     edge(new_x_pos, v[8]),
+            edge(new_x_pos, v[9]),     edge(new_x_pos, v[10]),
+            edge(new_x_pos, v[11]),    edge(new_x_pos, v[12]),
+            edge(new_x_pos, new_y_pos), edge(new_x_pos, v[19]),
+            # Y → M N O P Q Z T
+            edge(new_y_pos, v[12]),    edge(new_y_pos, v[13]),
+            edge(new_y_pos, v[14]),    edge(new_y_pos, v[15]),
+            edge(new_y_pos, v[16]),    edge(new_y_pos, z_pos),
+            edge(new_y_pos, v[19]),
+            # Z → Q R S T
+            edge(z_pos, v[16]),        edge(z_pos, v[17]),
+            edge(z_pos, v[18]),        edge(z_pos, v[19]),
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in new_edges], lag_ratio=0.04))
+        scene.next_slide()
+
+        return {
+            "heading":       ctx["heading"],
+            "label":         ctx["label"],
+            "steiner_label": ctx["steiner_label"],
+            "polygon":       polygon2,
+            "regions":       [red_region, gold_region, yellow_region, green_region, teal_region, blue_region],
+            "steiner_dots":  [u_dot, v_dot, x_dot, y_dot, z_dot],
+            "steiner_edges": new_edges,
+        }
+
+    return
+
+
+@app.cell
+def _(GOLD, TEAL):
+    def steiner_slide_3(scene, ctx):
+        import numpy as np
+
+        new_label = Text("Regiones convexas: k = 5", font_size=24, color=WHITE)
+        new_label.to_corner(DOWN + LEFT, buff=0.5)
+        new_steiner = Text("Puntos Steiner: k=5", font_size=24, color=WHITE)
+        new_steiner.to_corner(DOWN + RIGHT, buff=0.5)
+
+        scene.play(
+            FadeOut(ctx["polygon"]),
+            *[FadeOut(r) for r in ctx["regions"]],
+            *[FadeOut(d) for d in ctx["steiner_dots"]],
+            *[FadeOut(e) for e in ctx["steiner_edges"]],
+            Transform(ctx["label"], new_label),
+            Transform(ctx["steiner_label"], new_steiner),
+        )
+
+        A = np.array([0, 3, 0])
+        B = np.array([2, 0, 0])
+        C = np.array([2, 4, 0])
+        D = np.array([5, 4, 0])
+        E = np.array([5, 2, 0])
+        F = np.array([6, 0, 0])
+        G = np.array([8, 3, 0])
+
+        # Polygon outline: A→B→F→G→E→D→C→A
+        polygon = Polygon(A, B, F, G, E, D, C, color=WHITE, stroke_width=3)
+        polygon.move_to(ORIGIN)
+        polygon.scale(1.3)
+        scene.play(Create(polygon))
+        scene.next_slide()
+
+        # Vertices in order: A=0, B=1, F=2, G=3, E=4, D=5, C=6
+        v = polygon.get_vertices()
+
+        def dashed(a, b):
+            return DashedLine(a, b, color=YELLOW, stroke_width=2, dash_length=0.15)
+
+        dashed_edges = [
+            dashed(v[1], v[6]),  # B → C
+            dashed(v[6], v[4]),  # C → E
+            dashed(v[1], v[4]),  # B → E
+            dashed(v[4], v[2]),  # E → F
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in dashed_edges], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Scale polygon and dashed edges by 0.65
+        group = VGroup(polygon, *dashed_edges)
+        scene.play(group.animate.scale(0.65))
+        scene.next_slide()
+
+        # After full scale (1.3 * 0.65 = 0.845), original bbox center was (4, 2)
+        def sc(px, py):
+            return np.array([(px - 4.0) * 0.845, (py - 2.0) * 0.845, 0.0])
+
+        # Incenter and inradius in original polygon coordinates
+        def incenter_inradius(P1, P2, P3):
+            a = np.linalg.norm(P2 - P3)
+            b = np.linalg.norm(P1 - P3)
+            c = np.linalg.norm(P1 - P2)
+            I = (a * P1 + b * P2 + c * P3) / (a + b + c)
+            area = 0.5 * abs((P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0]))
+            r = area / ((a + b + c) / 2)
+            return I[:2], r
+
+        ic_xy, ic_r = incenter_inradius(A, C, B)
+        id_xy, id_r = incenter_inradius(C, B, E)
+        ie_xy, ie_r = incenter_inradius(D, C, E)
+        ir_xy, ir_r = incenter_inradius(E, F, G)
+        is_xy, is_r = incenter_inradius(E, B, F)
+
+        c_center = sc(ic_xy[0], ic_xy[1])
+        d_center = sc(id_xy[0], id_xy[1])
+        e_center = sc(ie_xy[0], ie_xy[1])
+        r_center = sc(ir_xy[0], ir_xy[1])
+        s_center = sc(is_xy[0], is_xy[1])
+
+        circle_c = Circle(radius=ic_r * 0.845, color=BLUE, stroke_width=2).move_to(c_center)
+        dot_c = Dot(c_center, radius=0.08, color=BLUE).set_z_index(3)
+
+        circle_d = Circle(radius=id_r * 0.845, color=RED, stroke_width=2).move_to(d_center)
+        dot_d = Dot(d_center, radius=0.08, color=RED).set_z_index(3)
+
+        circle_e = Circle(radius=ie_r * 0.845, color=GREEN, stroke_width=2).move_to(e_center)
+        dot_e = Dot(e_center, radius=0.08, color=GREEN).set_z_index(3)
+
+        circle_r = Circle(radius=ir_r * 0.845, color=TEAL, stroke_width=2).move_to(r_center)
+        dot_r = Dot(r_center, radius=0.08, color=TEAL).set_z_index(3)
+
+        circle_s = Circle(radius=is_r * 0.845, color=GOLD, stroke_width=2).move_to(s_center)
+        dot_s = Dot(s_center, radius=0.08, color=GOLD).set_z_index(3)
+
+        scene.play(
+            LaggedStart(
+                Create(circle_c), FadeIn(dot_c),
+                Create(circle_d), FadeIn(dot_d),
+                Create(circle_e), FadeIn(dot_e),
+                Create(circle_r), FadeIn(dot_r),
+                Create(circle_s), FadeIn(dot_s),
+                lag_ratio=0.4,
+            )
+        )
+        scene.next_slide()
+
+        # Fade out circles, keep center dots
+        scene.play(
+            FadeOut(circle_c), FadeOut(circle_d), FadeOut(circle_e),
+            FadeOut(circle_r), FadeOut(circle_s),
+        )
+        scene.next_slide()
+
+        # Vertex positions in scene coords after full scale
+        A_pos = sc(0, 3)
+        B_pos = sc(2, 0)
+        C_pos = sc(2, 4)
+        D_pos = sc(5, 4)
+        E_pos = sc(5, 2)
+        F_pos = sc(6, 0)
+        G_pos = sc(8, 3)
+
+        def bdash(a, b):
+            return DashedLine(a, b, color=BLUE, stroke_width=1.5, dash_length=0.12)
+
+        center_edges = [
+            bdash(c_center, A_pos), bdash(c_center, B_pos), bdash(c_center, C_pos),
+            bdash(d_center, C_pos), bdash(d_center, B_pos), bdash(d_center, E_pos),
+            bdash(e_center, D_pos), bdash(e_center, C_pos), bdash(e_center, E_pos),
+            bdash(r_center, E_pos), bdash(r_center, F_pos), bdash(r_center, G_pos),
+            bdash(s_center, F_pos), bdash(s_center, B_pos), bdash(s_center, E_pos),
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in center_edges], lag_ratio=0.15))
+        scene.next_slide()
+
+        # Red dashed edges between circumcenters
+        def rdash(a, b):
+            return DashedLine(a, b, color=RED, stroke_width=2, dash_length=0.12)
+
+        red_edges = [
+            rdash(c_center, d_center),
+            rdash(d_center, e_center),
+            rdash(d_center, s_center),
+            rdash(s_center, r_center),
+        ]
+        scene.play(LaggedStart(*[Create(e) for e in red_edges], lag_ratio=0.3))
+        scene.next_slide()
+
+        # Fade out yellow dashed edges
+        scene.play(*[FadeOut(e) for e in dashed_edges])
+        scene.next_slide()
+
+        return {
+            "heading":       ctx["heading"],
+            "label":         ctx["label"],
+            "steiner_label": ctx["steiner_label"],
+            "polygon":       polygon,
+            "dashed_edges":  dashed_edges,
+            "circles":       [circle_c, circle_d, circle_e, circle_r, circle_s],
+            "circle_dots":   [dot_c, dot_d, dot_e, dot_r, dot_s],
+            "center_edges":  center_edges,
+            "red_edges":     red_edges,
+        }
+
+    return
 
 
 @app.function
@@ -1077,6 +1087,7 @@ def steiner_conclusiones(scene, ctx):
     scene.next_slide()
 
     return {"heading": heading, "conclusiones_text": conclusiones_text, "t1": t1, "t2": t2, "t3": t3}
+
 
 @app.function
 def hexagon_slide(scene, ctx):
@@ -2047,70 +2058,102 @@ def holes_slide(scene, ctx):
 
 @app.function
 # -*- coding: utf-8 -*-
-# paper_slide — fiel al paper (Fig 3 y 4)
+# paper_slide — Reducción del Teorema 2.2 (Figuras 3 y 4 del paper)
 #
-# Gráfica cúbica: nodo L y nodo R conectados por arista central,
-# cada uno con 2 ramas externas (grado 3).
+# Coordenadas extraídas de geogebra.xml, mapeadas a Manim.
 #
-# Transformación de la arista central L-R:
-#   - g = arc vertex inferior (punta del V de abajo)
-#   - h = arc vertex superior (punta del V de arriba)
-#   - b,c = node vertices del nodo L en las bocas del túnel
-#   - d,e = node vertices del nodo R en las bocas del túnel
-#   - a = node vertex de L hacia sus ramas externas
-#   - f = node vertex de R hacia sus ramas externas
+# Topología:
+#   Gráfica cúbica original: 2 nodos (grado 3) + 4 endpoints (grado 1)
+#     Nodo izquierdo L → node vertices: D, E, H
+#     Nodo derecho   R → node vertices: F, G, P
 #
-# Diagonal forzada: g-h (conecta las dos puntas del V)
-# Otras diagonales (punteadas): triangularizan el interior
+#   5 aristas → 5 túneles:
+#     Central   L↔R:  paredes A-D/A-G (sup), E-B/B-F (inf); arc vtx A,B
+#     Sup-izq   L↔TL: paredes D-C, C-O / H-N; arc vtx C
+#     Inf-izq   L↔BL: paredes H-I-J-K / E-L-M; arc vtx I, L
+#     Sup-der   R↔TR: paredes G-W-Z / P-Q-R; arc vtx W, Q
+#     Inf-der   R↔BR: paredes P-S-T / F-U-V; arc vtx S, U
+#
+#   Diagonales forzadas (sólidas): g1:A-B, p1:H-C, n1:J-L, q1:W-Q, r1:S-U
+#   Otras diagonales (punteadas): h1:A-I, i1:I-B, j1:A-P, k1:B-P,
+#       s1:I-C, t1:I-L, a1:I-E, b1:I-D, l1:F-P, m1:G-P, c1:W-P, d1:P-U
+
 
 def paper_slide(scene, ctx):
     import numpy as np
     from manim import (
-        Text, Line, Dot, VGroup, DashedLine,
-        Write, FadeIn, FadeOut, Create, Transform,
-        WHITE, YELLOW,
-        UP, DOWN, LEFT, RIGHT,
+        Text, Line, Dot, DashedLine, VGroup, Group,
+        Write, FadeIn, FadeOut, Create,
+        WHITE, YELLOW, GRAY_B, BLUE_C,
+        UP, DOWN, LEFT, RIGHT, ORIGIN,
     )
 
-    def p(x, y):
-        return np.array([x, y, 0])
+    # ═══════════════════════════════════════════════════════
+    # Mapeo GeoGebra → Manim
+    # ═══════════════════════════════════════════════════════
+    CX, CY = 10.4, 4.7
+    SX, SY = 0.7, 1.0
 
-    def unit(a, b):
-        d = b - a
-        return d / np.linalg.norm(d)
+    def gp(x, y):
+        return np.array([(x - CX) * SX, (y - CY) * SY, 0.0])
 
-    def perp_left(u):
-        return np.array([-u[1], u[0], 0])
+    # --- Coordenadas del GeoGebra ---
+    PA = gp(10.0000, 7.0000)
+    PB = gp(10.0000, 6.0000)
+    PC = gp(6.0695, 6.7973)
+    PD = gp(7.4498, 5.1809)
+    PE = gp(7.9402, 4.2546)
+    PF = gp(12.6262, 4.5815)
+    PG = gp(13.0802, 5.5441)
+    PH = gp(5.6517, 6.0164)
+    PI = gp(7.2863, 4.4544)
+    PJ = gp(5.8878, 3.1285)
+    PK = gp(3.1816, 3.4736)
+    PL = gp(6.2692, 2.3293)
+    PM = gp(3.1089, 2.7471)
+    PN = gp(3.4904, 5.5804)
+    PO = gp(3.4177, 6.3978)
+    PP = gp(13.4072, 4.7631)
+    PQ = gp(14.9510, 6.2706)
+    PR = gp(16.5130, 5.9619)
+    PS = gp(14.9691, 3.4917)
+    PT = gp(17.5846, 3.5099)
+    PU = gp(14.8057, 2.8742)
+    PV = gp(17.6754, 2.8016)
+    PW = gp(14.7149, 7.1243)
+    PZ = gp(16.4766, 6.8882)
 
-    def line_intersect(p1, d1, p2, d2):
-        A = np.array([[d1[0], -d2[0]], [d1[1], -d2[1]]])
-        b = (p2 - p1)[:2]
-        try:
-            ts = np.linalg.solve(A, b)
-            return p1 + ts[0] * d1
-        except np.linalg.LinAlgError:
-            return (p1 + p2) / 2
+    # --- Gráfica cúbica original (inferida de node vertices) ---
+    NODE_L = (PD + PE + PH) / 3
+    NODE_R = (PF + PG + PP) / 3
+    END_TL = (PO + PN) / 2
+    END_BL = (PK + PM) / 2
+    END_TR = (PR + PZ) / 2
+    END_BR = (PT + PV) / 2
 
-    def node_triangle(center, nbrs, gap):
-        us = [unit(center, nb) for nb in nbrs]
-        ns = [perp_left(u) for u in us]
-        verts = []
-        for i in range(len(nbrs)):
-            j = (i + 1) % len(nbrs)
-            v = line_intersect(
-                center + ns[i] * gap, us[i],
-                center - ns[j] * gap, us[j],
-            )
-            verts.append(v)
-        return verts
+    # ═══════════════════════════════════════════════════════
+    # Estilos
+    # ═══════════════════════════════════════════════════════
+    CLR_FORCED = YELLOW
+    CLR_OTHER = GRAY_B
+    CLR_LABEL = BLUE_C
+    SW = 2.5
+    SW_D = 2.0
+    RN = 0.10
+    RS = 0.07
 
-    def mk_dot(pos, r=0.10):
+    def mk_dot(pos, r=RS):
         return Dot(pos, radius=r, color=WHITE).set_z_index(2)
 
-    def mk_line(a, b, sw=2.5):
+    def mk_line(a, b, sw=SW):
         return Line(a, b, color=WHITE, stroke_width=sw)
 
-    # ── Fade out slide anterior ──────────────────────────────────────────
+    def mk_label(txt, pos, off):
+        return Text(txt, font_size=14, color=CLR_LABEL).move_to(pos + off)
+
+    # ═══════════════════════════════════════════════════════
+    # Fade out slide anterior
+    # ═══════════════════════════════════════════════════════
     all_prev = [v for v in ctx.values() if v is not None]
     if all_prev:
         scene.play(*[FadeOut(obj) for obj in all_prev])
@@ -2119,262 +2162,755 @@ def paper_slide(scene, ctx):
     heading.to_corner(UP + LEFT, buff=0.4)
     scene.play(Write(heading))
 
-    # ════════════════════════════════════════════════════════════════════
-    # Coordenadas de la gráfica cúbica
-    # ════════════════════════════════════════════════════════════════════
-    L     = p(-1.2,  0.0)
-    R     = p( 1.2,  0.0)
-    L_top = p(-3.8,  2.4)
-    L_bot = p(-3.8, -2.4)
-    R_top = p( 3.8,  2.4)
-    R_bot = p( 3.8, -2.4)
+    # ════════════════════════════════════════════════════════
+    # SLIDE 1 — Gráfica cúbica original G
+    # ════════════════════════════════════════════════════════
+    sub1 = Text("Gráfica cúbica G", font_size=20, color=GRAY_B)
+    sub1.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.12)
+    scene.play(FadeIn(sub1), run_time=0.4)
 
-    gap  = 0.28
-    rise = 0.85
-
-    # ── SLIDE 1: gráfica cúbica ──────────────────────────────────────────
-    e_LR  = mk_line(L, R)
-    e_LLt = mk_line(L, L_top)
-    e_LLb = mk_line(L, L_bot)
-    e_RRt = mk_line(R, R_top)
-    e_RRb = mk_line(R, R_bot)
-
-    d_L    = mk_dot(L,     r=0.13)
-    d_R    = mk_dot(R,     r=0.13)
-    d_Ltop = mk_dot(L_top, r=0.10)
-    d_Lbot = mk_dot(L_bot, r=0.10)
-    d_Rtop = mk_dot(R_top, r=0.10)
-    d_Rbot = mk_dot(R_bot, r=0.10)
+    orig_edges = VGroup(
+        mk_line(NODE_L, NODE_R, 3),
+        mk_line(NODE_L, END_TL, 3),
+        mk_line(NODE_L, END_BL, 3),
+        mk_line(NODE_R, END_TR, 3),
+        mk_line(NODE_R, END_BR, 3),
+    )
+    orig_dots = VGroup(
+        mk_dot(NODE_L, RN), mk_dot(NODE_R, RN),
+        mk_dot(END_TL), mk_dot(END_BL),
+        mk_dot(END_TR), mk_dot(END_BR),
+    )
 
     scene.play(
-        Create(e_LR), Create(e_LLt), Create(e_LLb),
-        Create(e_RRt), Create(e_RRb),
-        FadeIn(d_L), FadeIn(d_R),
-        FadeIn(d_Ltop), FadeIn(d_Lbot),
-        FadeIn(d_Rtop), FadeIn(d_Rbot),
+        *[Create(e) for e in orig_edges],
+        *[FadeIn(d) for d in orig_dots],
+        run_time=1.5,
     )
     scene.next_slide()
 
-    # ════════════════════════════════════════════════════════════════════
-    # SLIDE 2: nodos explotan en triángulos
-    # L vecinos CCW: [R, L_top, L_bot]
-    # R vecinos CCW: [R_top, L, R_bot]
-    # ════════════════════════════════════════════════════════════════════
-    Lv = node_triangle(L, [R, L_top, L_bot], gap)
-    # Lv[0]: entre L→R y L→Ltop  → boca superior túnel central (= vértice 'c')
-    # Lv[1]: entre L→Ltop y L→Lbot → extremo externo (= vértice 'a')
-    # Lv[2]: entre L→Lbot y L→R  → boca inferior túnel central (= vértice 'b')
+    # ════════════════════════════════════════════════════════
+    # SLIDE 2 — Nodos explotan en node vertices
+    # ════════════════════════════════════════════════════════
+    scene.play(FadeOut(sub1), run_time=0.3)
+    sub2 = Text("Nodos -> vertices", font_size=20, color=GRAY_B)
+    sub2.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.12)
+    scene.play(FadeIn(sub2), run_time=0.4)
 
-    Rv = node_triangle(R, [R_top, L, R_bot], gap)
-    # Rv[0]: entre R→Rtop y R→L  → boca superior túnel central (= vértice 'e')
-    # Rv[1]: entre R→L y R→Rbot  → boca inferior túnel central (= vértice 'd')
-    # Rv[2]: entre R→Rbot y R→Rtop → extremo externo (= vértice 'f')
+    left_nvs = [PD, PE, PH]
+    right_nvs = [PF, PG, PP]
 
-    dLv = [Dot(L, radius=0.10, color=WHITE).set_z_index(2) for _ in range(3)]
-    dRv = [Dot(R, radius=0.10, color=WHITE).set_z_index(2) for _ in range(3)]
+    dLv = [mk_dot(NODE_L) for _ in range(3)]
+    dRv = [mk_dot(NODE_R) for _ in range(3)]
     for d in dLv + dRv:
         scene.add(d)
 
     scene.play(
-        FadeOut(d_L), FadeOut(d_R),
-        *[dLv[i].animate.move_to(Lv[i]) for i in range(3)],
-        *[dRv[i].animate.move_to(Rv[i]) for i in range(3)],
+        FadeOut(orig_dots[0]), FadeOut(orig_dots[1]),
+        *[dLv[i].animate.move_to(left_nvs[i]) for i in range(3)],
+        *[dRv[i].animate.move_to(right_nvs[i]) for i in range(3)],
+        run_time=1.5,
     )
+
+    nv_labels = VGroup(
+        mk_label("D", PD, UP * 0.18 + LEFT * 0.12),
+        mk_label("E", PE, DOWN * 0.18 + LEFT * 0.12),
+        mk_label("H", PH, LEFT * 0.2),
+        mk_label("F", PF, DOWN * 0.18 + RIGHT * 0.12),
+        mk_label("G", PG, UP * 0.18 + RIGHT * 0.12),
+        mk_label("P", PP, RIGHT * 0.2),
+    )
+    scene.play(FadeIn(nv_labels), run_time=0.6)
     scene.next_slide()
 
-    # ════════════════════════════════════════════════════════════════════
-    # Función para transformar una arista en túnel en V
-    # Devuelve (vTM, vBM): las dos puntas del V (arc vertices)
-    # ════════════════════════════════════════════════════════════════════
-    def edge_to_V(edge_mob,
-                  src_top, src_bot,
-                  dst_top, dst_bot,
-                  src_dot_top, src_dot_bot,
-                  dst_dot_top, dst_dot_bot,
-                  u_edge, rise_sign):
-        n_rise = perp_left(u_edge) * rise_sign
-
-        # Paso 1: paralelas
-        top = mk_line(src_top, dst_top)
-        bot = mk_line(src_bot, dst_bot)
-        anims = [Transform(edge_mob, top), FadeIn(bot)]
-        for sd, pos in [(src_dot_top, src_top), (src_dot_bot, src_bot)]:
-            anims.append(sd.animate.move_to(pos))
-        for sd, pos in [(dst_dot_top, dst_top), (dst_dot_bot, dst_bot)]:
-            if sd is not None:
-                anims.append(sd.animate.move_to(pos))
-        scene.play(*anims)
-        scene.next_slide()
-
-        # Paso 2: vértice central
-        TM = (src_top + dst_top) / 2
-        BM = (src_bot + dst_bot) / 2
-        tTL = mk_line(src_top, TM);  tTR = mk_line(TM, dst_top)
-        tBL = mk_line(src_bot, BM);  tBR = mk_line(BM, dst_bot)
-        dTM = mk_dot(TM, r=0.09);    dBM = mk_dot(BM, r=0.09)
-        scene.play(
-            Transform(edge_mob, tTL), FadeIn(tTR),
-            Transform(bot, tBL),      FadeIn(tBR),
-            FadeIn(dTM), FadeIn(dBM),
-        )
-        scene.next_slide()
-
-        # Paso 3: centrales suben → V
-        vTM = TM + n_rise * rise
-        vBM = BM + n_rise * rise
-        vTL = mk_line(src_top, vTM);  vTR = mk_line(vTM, dst_top)
-        vBL = mk_line(src_bot, vBM);  vBR = mk_line(vBM, dst_bot)
-        dvTM = mk_dot(vTM, r=0.09);   dvBM = mk_dot(vBM, r=0.09)
-        scene.play(
-            Transform(edge_mob, vTL), Transform(tTR, vTR),
-            Transform(bot,      vBL), Transform(tBR, vBR),
-            Transform(dTM, dvTM),     Transform(dBM, dvBM),
-        )
-        scene.next_slide()
-        return vTM, vBM   # arc vertices: punta superior e inferior del V
-
-    u_LR  = unit(L, R)
-    u_LLt = unit(L, L_top)
-    u_LLb = unit(L, L_bot)
-    u_RRt = unit(R, R_top)
-    u_RRb = unit(R, R_bot)
-
-    # ── Arista central L↔R → h (superior) y g (inferior) ───────────────
-    # top: Lv[0]=c → Rv[0]=e  (boca superior)
-    # bot: Lv[2]=b → Rv[1]=d  (boca inferior)
-    # rise hacia ARRIBA → h sube, g baja (rise_sign=+1 da arriba, -1 abajo)
-    # Pero queremos DOS puntas: una sube y otra baja.
-    # El paper muestra h ARRIBA y g ABAJO del túnel central.
-    # En edge_to_V el vTM sube (n_rise*rise), vBM también sube (mismo n_rise).
-    # Para que uno suba y otro baje, llamamos dos veces o usamos signo opuesto.
-    # Solución: el vTM sube con +rise_sign y el vBM con -rise_sign.
-
-    n_rise_LR = perp_left(u_LR)  # apunta hacia arriba
-
-    # Paso 1: paralelas
-    top_LR = mk_line(Lv[0], Rv[0])
-    bot_LR = mk_line(Lv[2], Rv[1])
-    scene.play(
-        Transform(e_LR, top_LR),
-        dLv[0].animate.move_to(Lv[0]),
-        dLv[2].animate.move_to(Lv[2]),
-        dRv[0].animate.move_to(Rv[0]),
-        dRv[1].animate.move_to(Rv[1]),
-        FadeIn(bot_LR),
-    )
-    scene.next_slide()
-
-    # Paso 2: vértice central en cada paralela
-    TM_LR = (Lv[0] + Rv[0]) / 2   # centro paralela superior → será h
-    BM_LR = (Lv[2] + Rv[1]) / 2   # centro paralela inferior → será g
-
-    tTL_LR = mk_line(Lv[0], TM_LR);  tTR_LR = mk_line(TM_LR, Rv[0])
-    tBL_LR = mk_line(Lv[2], BM_LR);  tBR_LR = mk_line(BM_LR, Rv[1])
-    dTM_LR = mk_dot(TM_LR, r=0.09)
-    dBM_LR = mk_dot(BM_LR, r=0.09)
-    scene.play(
-        Transform(e_LR, tTL_LR), FadeIn(tTR_LR),
-        Transform(bot_LR, tBL_LR), FadeIn(tBR_LR),
-        FadeIn(dTM_LR), FadeIn(dBM_LR),
-    )
-    scene.next_slide()
-
-    # Paso 3: ambos suben, h más arriba (punta del V superior),
-    # g a media altura entre las bocas (punta del V inferior, pero también hacia arriba)
-    vh = TM_LR + n_rise_LR * rise          # h = punta alta del V (paralela superior)
-    vg = BM_LR + n_rise_LR * (rise * 0.45) # g = punta baja del V (paralela inferior, sube menos)
-
-    vTL_LR = mk_line(Lv[0], vh);   vTR_LR = mk_line(vh, Rv[0])
-    vBL_LR = mk_line(Lv[2], vg);   vBR_LR = mk_line(vg, Rv[1])
-    dvh = mk_dot(vh, r=0.10)
-    dvg = mk_dot(vg, r=0.10)
+    # ════════════════════════════════════════════════════════
+    # SLIDE 3 — Aristas → paredes de túnel + arc vertices
+    # ════════════════════════════════════════════════════════
+    scene.play(FadeOut(sub2), run_time=0.3)
+    sub3 = Text("Aristas -> túneles en V", font_size=20, color=GRAY_B)
+    sub3.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.12)
+    scene.play(FadeIn(sub3), run_time=0.4)
 
     scene.play(
-        Transform(e_LR,    vTL_LR), Transform(tTR_LR, vTR_LR),
-        Transform(bot_LR,  vBL_LR), Transform(tBR_LR, vBR_LR),
-        Transform(dTM_LR,  dvh),    Transform(dBM_LR,  dvg),
+        *[FadeOut(e) for e in orig_edges],
+        *[FadeOut(orig_dots[i]) for i in range(2, 6)],
+        run_time=0.8,
     )
+
+    # --- Paredes por túnel ---
+    w_central = VGroup(
+        mk_line(PA, PD), mk_line(PE, PB),
+        mk_line(PB, PF), mk_line(PA, PG),
+    )
+    w_tl = VGroup(
+        mk_line(PD, PC), mk_line(PC, PO), mk_line(PH, PN),
+    )
+    w_bl = VGroup(
+        mk_line(PH, PI), mk_line(PI, PJ), mk_line(PJ, PK),
+        mk_line(PE, PL), mk_line(PL, PM),
+    )
+    w_tr = VGroup(
+        mk_line(PG, PW), mk_line(PW, PZ),
+        mk_line(PP, PQ), mk_line(PQ, PR),
+    )
+    w_br = VGroup(
+        mk_line(PP, PS), mk_line(PS, PT),
+        mk_line(PF, PU), mk_line(PU, PV),
+    )
+
+    # --- Arc vertices ---
+    arc_info = [
+        ("A", PA, UP * 0.18 + LEFT * 0.05),
+        ("B", PB, DOWN * 0.18 + LEFT * 0.05),
+        ("C", PC, UP * 0.15 + LEFT * 0.1),
+        ("I", PI, DOWN * 0.18 + LEFT * 0.1),
+        ("L", PL, DOWN * 0.18),
+        ("W", PW, UP * 0.15 + LEFT * 0.1),
+        ("Q", PQ, UP * 0.15 + RIGHT * 0.1),
+        ("S", PS, DOWN * 0.15 + LEFT * 0.1),
+        ("U", PU, DOWN * 0.18),
+    ]
+    arc_dots = VGroup(*[mk_dot(pos) for _, pos, _ in arc_info])
+    arc_lbls = VGroup(*[mk_label(n, p, o) for n, p, o in arc_info])
+
+    # --- Endpoints ---
+    ep_info = [
+        ("O", PO, UP * 0.15), ("N", PN, LEFT * 0.2),
+        ("K", PK, LEFT * 0.2), ("M", PM, LEFT * 0.2),
+        ("J", PJ, LEFT * 0.2), ("Z", PZ, UP * 0.15),
+        ("R", PR, RIGHT * 0.2), ("T", PT, RIGHT * 0.2),
+        ("V", PV, RIGHT * 0.2),
+    ]
+    ep_dots = VGroup(*[mk_dot(pos) for _, pos, _ in ep_info])
+    ep_lbls = VGroup(*[mk_label(n, p, o) for n, p, o in ep_info])
+
+    # Animar por grupo
+    scene.play(Create(w_central), run_time=1.0)
+    scene.play(FadeIn(arc_dots[0:2]), FadeIn(arc_lbls[0:2]), run_time=0.5)
+
+    scene.play(Create(w_tl), run_time=0.8)
+    scene.play(FadeIn(arc_dots[2]), FadeIn(arc_lbls[2]), run_time=0.4)
+
+    scene.play(Create(w_bl), run_time=0.8)
+    scene.play(FadeIn(arc_dots[3:5]), FadeIn(arc_lbls[3:5]), run_time=0.4)
+
+    scene.play(Create(w_tr), run_time=0.8)
+    scene.play(FadeIn(arc_dots[5:7]), FadeIn(arc_lbls[5:7]), run_time=0.4)
+
+    scene.play(Create(w_br), run_time=0.8)
+    scene.play(FadeIn(arc_dots[7:9]), FadeIn(arc_lbls[7:9]), run_time=0.4)
+
+    scene.play(FadeIn(ep_dots), FadeIn(ep_lbls), run_time=0.6)
     scene.next_slide()
 
-    # ── Ramas laterales (sin arc vertices, extremos libres) ──────────────
-    n_LLt = perp_left(u_LLt)
-    Ltop_top = L_top + n_LLt * gap
-    Ltop_bot = L_top - n_LLt * gap
-    cLLt, _ = edge_to_V(e_LLt,
-        Lv[1], Lv[0], Ltop_top, Ltop_bot,
-        dLv[1], dLv[0], None, None,
-        u_LLt, rise_sign=-1)
+    # ════════════════════════════════════════════════════════
+    # SLIDE 4 — Diagonales forzadas (sólidas, amarillas)
+    # ════════════════════════════════════════════════════════
+    scene.play(FadeOut(sub3), run_time=0.3)
+    sub4 = Text("Diagonales forzadas y otras diagonales", font_size=20, color=GRAY_B)
+    sub4.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.12)
+    scene.play(FadeIn(sub4), run_time=0.4)
 
-    n_LLb = perp_left(u_LLb)
-    Lbot_top = L_bot + n_LLb * gap
-    Lbot_bot = L_bot - n_LLb * gap
-    cLLb, _ = edge_to_V(e_LLb,
-        Lv[2], Lv[1], Lbot_top, Lbot_bot,
-        dLv[2], dLv[1], None, None,
-        u_LLb, rise_sign=-1)
+    forced_diags = VGroup(
+        Line(PA, PB, color=CLR_FORCED, stroke_width=SW_D).set_z_index(3),
+        Line(PH, PC, color=CLR_FORCED, stroke_width=SW_D).set_z_index(3),
+        Line(PJ, PL, color=CLR_FORCED, stroke_width=SW_D).set_z_index(3),
+        Line(PW, PQ, color=CLR_FORCED, stroke_width=SW_D).set_z_index(3),
+        Line(PS, PU, color=CLR_FORCED, stroke_width=SW_D).set_z_index(3),
+    )
+    scene.play(Create(forced_diags), run_time=1.5)
+    scene.next_slide()
 
-    n_RRt = perp_left(u_RRt)
-    Rtop_top = R_top + n_RRt * gap
-    Rtop_bot = R_top - n_RRt * gap
-    cRRt, _ = edge_to_V(e_RRt,
-        Rv[0], Rv[2], Rtop_top, Rtop_bot,
-        dRv[0], dRv[2], None, None,
-        u_RRt, rise_sign=-1)
+    # ════════════════════════════════════════════════════════
+    # SLIDE 5 — Otras diagonales (punteadas)
+    # ════════════════════════════════════════════════════════
+    other_pairs = [
+        (PA, PI), (PI, PB), (PA, PP), (PB, PP),
+        (PI, PC), (PI, PL), (PI, PE), (PI, PD),
+        (PF, PP), (PG, PP), (PW, PP), (PP, PU),
+    ]
+    other_diags = VGroup(*[
+        DashedLine(s, e, color=CLR_OTHER, stroke_width=SW_D,
+                   dash_length=0.10).set_z_index(2)
+        for s, e in other_pairs
+    ])
+    scene.play(Create(other_diags), run_time=1.5)
 
-    n_RRb = perp_left(u_RRb)
-    Rbot_top = R_bot + n_RRb * gap
-    Rbot_bot = R_bot - n_RRb * gap
-    cRRb, _ = edge_to_V(e_RRb,
-        Rv[2], Rv[1], Rbot_top, Rbot_bot,
-        dRv[2], dRv[1], None, None,
-        u_RRb, rise_sign=-1)
+    # Leyenda
+    leg_f = VGroup(
+        Line(ORIGIN, RIGHT * 0.5, color=CLR_FORCED, stroke_width=3),
+        Text("── diagonales forzadas", font_size=14, color=CLR_FORCED),
+    ).arrange(RIGHT, buff=0.12)
+    leg_o = VGroup(
+        DashedLine(ORIGIN, RIGHT * 0.5, color=CLR_OTHER,
+                   stroke_width=2, dash_length=0.08),
+        Text("╌╌ otras diagonales", font_size=14, color=CLR_OTHER),
+    ).arrange(RIGHT, buff=0.12)
+    legend = VGroup(leg_f, leg_o).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+    legend.to_corner(DOWN + RIGHT, buff=0.35)
+    scene.play(FadeIn(legend), run_time=0.6)
+    scene.next_slide()
 
-    # ════════════════════════════════════════════════════════════════════
-    # SLIDE FINAL — diagonales
-    # El interior del túnel es el hexágono: c-h-e-d-g-b
-    # Diagonal FORZADA (paper): g-h (conecta los dos arc vertices)
-    # Para triangular el hexágono con g-h como base se necesitan además:
-    #   c-g y e-g  (triangularizan los cuadrantes con g)
-    #   b-h y d-h  (triangularizan los cuadrantes con h)
-    # Según Fig 4: sólidas = g-h, c-g, e-g (forzadas)
-    #              punteadas = b-h, d-h (otras diagonales)
-    # ════════════════════════════════════════════════════════════════════
-    # Vértices del hexágono interior del túnel:
-    va = Lv[1]   # a — externo L
-    vb = Lv[2]   # b — boca inf L
-    vc = Lv[0]   # c — boca sup L
-    vd = Rv[1]   # d — boca inf R
-    ve = Rv[0]   # e — boca sup R
-    vf = Rv[2]   # f — externo R
+    # ═══════════════════════════════════════════════════════
+    # Retornar contexto para el siguiente slide
+    # ═══════════════════════════════════════════════════════
+    return {
+        "heading": heading,
+        "all_objs": None,
+    }
 
-    # Diagonales forzadas (sólidas, YELLOW): g-h, c-g, e-g
-    forced = VGroup(
-        Line(vg, vh, color=YELLOW, stroke_width=2.5).set_z_index(3),
-        Line(vc, vg, color=YELLOW, stroke_width=2.5).set_z_index(3),
-        Line(ve, vg, color=YELLOW, stroke_width=2.5).set_z_index(3),
+
+@app.function
+# -*- coding: utf-8 -*-
+# example_paper — Ejemplo de la reducción sobre Q₃
+
+
+def example_paper(scene, ctx):
+    import numpy as np
+    from manim import (
+        Text, Line, Dot, DashedLine, VGroup,
+        Write, FadeIn, FadeOut, Create,
+        WHITE, YELLOW, GRAY_B, BLUE_C, RED,
+        UP, DOWN, LEFT, RIGHT, ORIGIN,
     )
 
-    # Otras diagonales (punteadas, WHITE): b-h, d-h
+    TEAL = '#006758'
+    FORCED_CLR = YELLOW
+    OTHER_CLR = GRAY_B
+
+    def mk_dot(pos, r=0.04):
+        return Dot(pos, radius=r, color=WHITE).set_z_index(2)
+
+    def mk_line(a, b, sw=1.8, color=WHITE):
+        return Line(a, b, color=color, stroke_width=sw)
+
+    def gp3(x, y):
+        return np.array([(x - 7.5) * 0.55, (y - 5.5) * 0.55 - 0.3, 0.0])
+
+    def gp(x, y):
+        return np.array([(x - 26.0) * 0.214, (y - 15.5) * 0.214 - 0.3, 0.0])
+
+    # ═══ Puntos Q₃ ═══
+    ORIG_A = gp3(6.0, 7.0)
+    ORIG_B = gp3(6.0, 4.0)
+    ORIG_C = gp3(9.0, 4.0)
+    ORIG_D = gp3(9.0, 7.0)
+    ORIG_E = gp3(2.0, 11.0)
+    ORIG_F = gp3(13.0, 11.0)
+    ORIG_G = gp3(13.0, 0.0)
+    ORIG_H = gp3(2.0, 0.0)
+
+    # ═══ Puntos reducción ═══
+    PA1 = gp(29.4943, 11.6206)
+    PA2 = gp(30.1718, 22.2688)
+    PB1 = gp(31.0032, 13.1295)
+    PB2 = gp(30.8275, 21.2678)
+    PC1 = gp(24.6332, 17.8934)
+    PC2 = gp(34.0, 16.0)
+    PD1 = gp(23.5544, 17.1011)
+    PD2 = gp(31.6077, 15.943)
+    PE1 = gp(24.3679, 16.4109)
+    PE2 = gp(34.4746, 11.604)
+    PF1 = gp(28.8523, 19.5134)
+    PF2 = gp(33.5037, 10.8878)
+    PG1 = gp(28.8135, 17.4565)
+    PG2 = gp(26.685, 7.3888)
+    PH1 = gp(30.5211, 18.4267)
+    PH2 = gp(26.6921, 9.1202)
+    PI = gp(33.8054, 6.8569)
+    PI1 = gp(40.0, 16.0)
+    PJ = gp(34.4737, 5.9515)
+    PJ1 = gp(38.3941, 15.9672)
+    PK = gp(35.0341, 8.4304)
+    PK1 = gp(26.6123, 2.6169)
+    PL = gp(35.1005, 23.2002)
+    PL1 = gp(26.4938, 3.5416)
+    PM = gp(36.3393, 25.3637)
+    PM1 = gp(12.0, 16.0)
+    PN = gp(33.8975, 24.8302)
+    PN1 = gp(14.0, 16.0)
+    PO = gp(21.0043, 23.2723)
+    PO1 = gp(27.035, 28.2966)
+    PP = gp(19.068, 22.5982)
+    PP1 = gp(27.035, 26.4762)
+    PQ = gp(18.4517, 23.954)
+    PQ1 = gp(19.3638, 12.4175)
+    PR = gp(18.7395, 7.6245)
+    PR1 = gp(20.3005, 11.5794)
+    PS = gp(19.9452, 6.6629)
+    PS1 = gp(24.1701, 20.9219)
+    PT = gp(19.0998, 5.6427)
+    PT1 = gp(23.3165, 19.9023)
+    PU = gp(23.3079, 13.1942)
+    PU1 = gp(19.0011, 16.0611)
+    PV = gp(24.0, 12.0)
+    PV1 = gp(21.2536, 15.658)
+    PW = gp(25.3341, 13.0864)
+    PW1 = gp(27.1835, 22.23)
+    PZ = gp(28.8692, 12.6769)
+    PZ1 = gp(27.0671, 20.2895)
+
+    # ═══ Puntos dual ═══
+    D_PA = gp(18.1617, 22.9073)
+    D_PA3 = gp(20.596, 24.5953)
+    D_PA4 = gp(25.1322, 12.1194)
+    D_PB = gp(13.6198, 16.7384)
+    D_PB3 = gp(20.4183, 23.4581)
+    D_PB4 = gp(24.2093, 12.5018)
+    D_PC = gp(13.2751, 15.5465)
+    D_PC3 = gp(23.0, 21.0)
+    D_PC4 = gp(20.2557, 12.1842)
+    D_PD = gp(18.2861, 7.342)
+    D_PD3 = gp(19.5299, 22.7118)
+    D_PD4 = gp(23.6701, 13.7456)
+    D_PE = gp(19.6246, 6.772)
+    D_PE3 = gp(23.8287, 19.6616)
+    D_PE4 = gp(23.2463, 13.0828)
+    D_PF = gp(19.7609, 11.2511)
+    D_PF3 = gp(23.7406, 17.6498)
+    D_PF4 = gp(20.8451, 15.3102)
+    D_PG = gp(18.8225, 7.9352)
+    D_PG3 = gp(24.4861, 18.2631)
+    D_PG4 = gp(21.0624, 16.2663)
+    D_PH = gp(19.7076, 5.725)
+    D_PH3 = gp(24.9154, 17.6351)
+    D_PH4 = gp(23.6848, 16.4653)
+    D_PI2 = gp(26.0576, 3.3263)
+    D_PI3 = gp(26.7142, 20.9526)
+    D_PJ2 = gp(27.0502, 3.3072)
+    D_PJ3 = gp(27.4393, 20.913)
+    D_PK2 = gp(33.727, 5.9027)
+    D_PK3 = gp(28.3094, 19.0146)
+    D_PL2 = gp(33.8691, 7.2353)
+    D_PL3 = gp(29.0734, 19.2447)
+    D_PM2 = gp(34.0, 10.0)
+    D_PM3 = gp(30.1552, 20.9394)
+    D_PN2 = gp(34.7043, 8.337)
+    D_PN3 = gp(30.0629, 18.8168)
+    D_PO2 = gp(35.1819, 7.7913)
+    D_PO3 = gp(30.0233, 17.5248)
+    D_PP2 = gp(38.8453, 15.3686)
+    D_PP3 = gp(32.4755, 16.4569)
+    D_PQ2 = gp(39.0, 17.0)
+    D_PQ3 = gp(32.2118, 15.4286)
+    D_PR2 = gp(36.0, 23.0)
+    D_PR3 = gp(30.4057, 13.5696)
+    D_PS2 = gp(34.8287, 23.6891)
+    D_PS3 = gp(30.7347, 12.706)
+    D_PT2 = gp(31.3638, 22.2143)
+    D_PT3 = gp(33.5302, 11.5262)
+    D_PU2 = gp(33.9402, 24.4531)
+    D_PU3 = gp(30.2475, 11.8294)
+    D_PV2 = gp(34.7753, 25.4304)
+    D_PV3 = gp(28.6918, 11.6184)
+    D_PW2 = gp(28.0, 27.0)
+    D_PW3 = gp(26.9779, 8.5071)
+    D_PZ2 = gp(26.2286, 27.0118)
+    D_PZ3 = gp(26.1737, 8.9817)
+
+    all_prev = [m for m in scene.mobjects]
+    if all_prev:
+        scene.play(*[FadeOut(m) for m in all_prev], run_time=0.8)
+
+    heading = Text('Ejemplo: reducción sobre Q₃', font_size=28, color=WHITE)
+    heading.to_corner(UP + LEFT, buff=0.35)
+    scene.play(Write(heading))
+
+    # ════ SLIDE 1: Q₃ ════
+    sub = Text('Grafo cúbico Q₃', font_size=18, color=GRAY_B)
+    sub.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.1)
+    scene.play(FadeIn(sub), run_time=0.4)
+
+    orig_edges = VGroup(
+        mk_line(ORIG_A, ORIG_B, sw=2.5),
+        mk_line(ORIG_B, ORIG_C, sw=2.5),
+        mk_line(ORIG_C, ORIG_D, sw=2.5),
+        mk_line(ORIG_D, ORIG_A, sw=2.5),
+        mk_line(ORIG_E, ORIG_F, sw=2.5),
+        mk_line(ORIG_F, ORIG_G, sw=2.5),
+        mk_line(ORIG_G, ORIG_H, sw=2.5),
+        mk_line(ORIG_H, ORIG_E, sw=2.5),
+        mk_line(ORIG_A, ORIG_E, sw=2.5),
+        mk_line(ORIG_D, ORIG_F, sw=2.5),
+        mk_line(ORIG_C, ORIG_G, sw=2.5),
+        mk_line(ORIG_B, ORIG_H, sw=2.5),
+    )
+    orig_dots = VGroup(
+        mk_dot(ORIG_A, r=0.07),
+        mk_dot(ORIG_B, r=0.07),
+        mk_dot(ORIG_C, r=0.07),
+        mk_dot(ORIG_D, r=0.07),
+        mk_dot(ORIG_E, r=0.07),
+        mk_dot(ORIG_F, r=0.07),
+        mk_dot(ORIG_G, r=0.07),
+        mk_dot(ORIG_H, r=0.07),
+    )
+    orig_labels = VGroup(
+        Text('A', font_size=13, color=BLUE_C).next_to(ORIG_A, UP, buff=0.06),
+        Text('B', font_size=13, color=BLUE_C).next_to(ORIG_B, UP, buff=0.06),
+        Text('C', font_size=13, color=BLUE_C).next_to(ORIG_C, UP, buff=0.06),
+        Text('D', font_size=13, color=BLUE_C).next_to(ORIG_D, UP, buff=0.06),
+        Text('E', font_size=13, color=BLUE_C).next_to(ORIG_E, UP, buff=0.06),
+        Text('F', font_size=13, color=BLUE_C).next_to(ORIG_F, UP, buff=0.06),
+        Text('G', font_size=13, color=BLUE_C).next_to(ORIG_G, UP, buff=0.06),
+        Text('H', font_size=13, color=BLUE_C).next_to(ORIG_H, UP, buff=0.06),
+    )
+    scene.play(*[Create(e) for e in orig_edges], *[FadeIn(d) for d in orig_dots], run_time=1.5)
+    scene.play(FadeIn(orig_labels), run_time=0.5)
+    scene.next_slide()
+
+    # ════ SLIDE 2: Polígono reducido ════
+    scene.play(FadeOut(sub), run_time=0.3)
+    sub2 = Text('Polígono con hoyos (paredes de túnel)', font_size=18, color=GRAY_B)
+    sub2.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.1)
+    scene.play(FadeIn(sub2), run_time=0.4)
+    scene.play(FadeOut(orig_edges), FadeOut(orig_dots), FadeOut(orig_labels), run_time=0.8)
+
+    tunnel_walls = VGroup(
+        mk_line(PM, PI1),
+        mk_line(PI1, PJ),
+        mk_line(PK, PJ1),
+        mk_line(PL, PJ1),
+        mk_line(PK1, PJ),
+        mk_line(PL1, PI),
+        mk_line(PK1, PT),
+        mk_line(PL1, PS),
+        mk_line(PT, PM1),
+        mk_line(PR, PN1),
+        mk_line(PM1, PQ),
+        mk_line(PN1, PP),
+        mk_line(PQ, PO1),
+        mk_line(PO1, PM),
+        mk_line(PO, PP1),
+        mk_line(PP1, PN),
+        mk_line(PR, PQ1),
+        mk_line(PQ1, PU),
+        mk_line(PS, PR1),
+        mk_line(PR1, PV),
+        mk_line(PO, PS1),
+        mk_line(PS1, PC1),
+        mk_line(PP, PT1),
+        mk_line(PT1, PD1),
+        mk_line(PD1, PU1),
+        mk_line(PU1, PU),
+        mk_line(PE1, PV1),
+        mk_line(PV1, PW),
+        mk_line(PC1, PW1),
+        mk_line(PW1, PF1),
+        mk_line(PE1, PZ1),
+        mk_line(PZ1, PG1),
+        mk_line(PF1, PA2),
+        mk_line(PA2, PN),
+        mk_line(PH1, PB2),
+        mk_line(PB2, PL),
+        mk_line(PH1, PC2),
+        mk_line(PC2, PB1),
+        mk_line(PG1, PD2),
+        mk_line(PD2, PZ),
+        mk_line(PB1, PE2),
+        mk_line(PE2, PK),
+        mk_line(PA1, PF2),
+        mk_line(PF2, PI),
+        mk_line(PV, PG2),
+        mk_line(PG2, PA1),
+        mk_line(PW, PH2),
+        mk_line(PH2, PZ),
+    )
+    red_pts = VGroup(
+        mk_dot(PA1),
+        mk_dot(PA2),
+        mk_dot(PB1),
+        mk_dot(PB2),
+        mk_dot(PC1),
+        mk_dot(PC2),
+        mk_dot(PD1),
+        mk_dot(PD2),
+        mk_dot(PE1),
+        mk_dot(PE2),
+        mk_dot(PF1),
+        mk_dot(PF2),
+        mk_dot(PG1),
+        mk_dot(PG2),
+        mk_dot(PH1),
+        mk_dot(PH2),
+        mk_dot(PI),
+        mk_dot(PI1),
+        mk_dot(PJ),
+        mk_dot(PJ1),
+        mk_dot(PK),
+        mk_dot(PK1),
+        mk_dot(PL),
+        mk_dot(PL1),
+        mk_dot(PM),
+        mk_dot(PM1),
+        mk_dot(PN),
+        mk_dot(PN1),
+        mk_dot(PO),
+        mk_dot(PO1),
+        mk_dot(PP),
+        mk_dot(PP1),
+        mk_dot(PQ),
+        mk_dot(PQ1),
+        mk_dot(PR),
+        mk_dot(PR1),
+        mk_dot(PS),
+        mk_dot(PS1),
+        mk_dot(PT),
+        mk_dot(PT1),
+        mk_dot(PU),
+        mk_dot(PU1),
+        mk_dot(PV),
+        mk_dot(PV1),
+        mk_dot(PW),
+        mk_dot(PW1),
+        mk_dot(PZ),
+        mk_dot(PZ1),
+    )
+    scene.play(Create(tunnel_walls), run_time=2.5)
+    scene.play(FadeIn(red_pts), run_time=0.8)
+    scene.next_slide()
+
+    # ════ SLIDE 3: Diagonales forzadas ════
+    scene.play(FadeOut(sub2), run_time=0.3)
+    sub3 = Text('Diagonales forzadas', font_size=18, color=GRAY_B)
+    sub3.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.1)
+    scene.play(FadeIn(sub3), run_time=0.4)
+
+    forced_diags = VGroup(
+        mk_line(PT1, PS1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PO1, PP1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PJ1, PI1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PL1, PK1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PN1, PM1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PV1, PU1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PR1, PQ1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PH2, PG2, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PF2, PE2, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PD2, PC2, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PZ1, PW1, sw=2.2, color=FORCED_CLR).set_z_index(3),
+        mk_line(PB2, PA2, sw=2.2, color=FORCED_CLR).set_z_index(3),
+    )
+    scene.play(Create(forced_diags), run_time=1.5)
+    scene.next_slide()
+
+    # ════ SLIDE 4: Otras diagonales ════
+    scene.play(FadeOut(sub3), run_time=0.3)
+    sub4 = Text('Otras diagonales', font_size=18, color=GRAY_B)
+    sub4.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.1)
+    scene.play(FadeIn(sub4), run_time=0.4)
+
     other_diags = VGroup(
-        DashedLine(vb, vh, color=WHITE, stroke_width=2,
-                   dash_length=0.10).set_z_index(2),
-        DashedLine(vd, vh, color=WHITE, stroke_width=2,
-                   dash_length=0.10).set_z_index(2),
+        DashedLine(PT1, PQ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PS1, PQ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PP, PQ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PQ, PO, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PM1, PP, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PM1, PR, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PT, PQ1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PR1, PT, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PR, PT, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PT, PS, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PS1, PE1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PT1, PE1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PC1, PE1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PD1, PE1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PA2, PM, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PB2, PM, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PL, PM, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PN, PM, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PM, PJ1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PK, PI1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PF2, PJ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PE2, PJ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PK, PJ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PI, PJ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PS, PK1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PK1, PI, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PQ1, PW, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PR1, PW, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PV, PW, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PU, PW, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PV, PH2, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PH2, PA1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PZ, PE2, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PF2, PZ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PA1, PZ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PB1, PZ, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PV1, PU, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PD1, PV1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PC1, PZ1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PZ1, PF1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PF1, PG1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PG1, PA2, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PG1, PB2, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PH1, PG1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PH1, PD2, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PD2, PB1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PO, PO1, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+        DashedLine(PO1, PN, color=OTHER_CLR, stroke_width=1.2, dash_length=0.06).set_z_index(2),
+    )
+    scene.play(Create(other_diags), run_time=1.5)
+
+    leg_f = VGroup(
+        Line(ORIGIN, RIGHT*0.4, color=FORCED_CLR, stroke_width=3),
+        Text('forzadas', font_size=12, color=FORCED_CLR),
+    ).arrange(RIGHT, buff=0.1)
+    leg_o = VGroup(
+        DashedLine(ORIGIN, RIGHT*0.4, color=OTHER_CLR, stroke_width=2, dash_length=0.06),
+        Text('otras', font_size=12, color=OTHER_CLR),
+    ).arrange(RIGHT, buff=0.1)
+    legend = VGroup(leg_f, leg_o).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
+    legend.to_corner(DOWN + RIGHT, buff=0.3)
+    scene.play(FadeIn(legend), run_time=0.5)
+    scene.next_slide()
+
+    # ════ SLIDE 5: Dual + hamiltoniano ════
+    scene.play(FadeOut(sub4), run_time=0.3)
+    sub5 = Text('Camino hamiltoniano en la dual', font_size=18, color=GRAY_B)
+    sub5.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.1)
+    scene.play(FadeIn(sub5), run_time=0.4)
+
+    dual_teal = VGroup(
+        mk_line(D_PB, D_PA, sw=2.0, color=RED),
+        mk_line(D_PA, D_PD3, sw=2.0, color=RED),
+        mk_line(D_PC3, D_PB3, sw=2.0, color=RED),
+        mk_line(D_PB3, D_PA3, sw=2.0, color=RED),
+        mk_line(D_PA3, D_PZ2, sw=2.0, color=RED),
+        mk_line(D_PZ2, D_PW2, sw=2.0, color=RED),
+        mk_line(D_PW2, D_PV2, sw=2.0, color=RED),
+        mk_line(D_PV2, D_PU2, sw=2.0, color=RED),
+        mk_line(D_PU2, D_PT2, sw=2.0, color=RED),
+        mk_line(D_PT2, D_PS2, sw=2.0, color=RED),
+        mk_line(D_PS2, D_PR2, sw=2.0, color=RED),
+        mk_line(D_PR2, D_PQ2, sw=2.0, color=RED),
+        mk_line(D_PQ2, D_PP2, sw=2.0, color=RED),
+        mk_line(D_PP2, D_PO2, sw=2.0, color=RED),
+        mk_line(D_PO2, D_PN2, sw=2.0, color=RED),
+        mk_line(D_PN2, D_PM2, sw=2.0, color=RED),
+        mk_line(D_PM2, D_PL2, sw=2.0, color=RED),
+        mk_line(D_PL2, D_PK2, sw=2.0, color=RED),
+        mk_line(D_PK2, D_PJ2, sw=2.0, color=RED),
+        mk_line(D_PJ2, D_PI2, sw=2.0, color=RED),
+        mk_line(D_PI2, D_PH, sw=2.0, color=RED),
+        mk_line(D_PH, D_PE, sw=2.0, color=RED),
+        mk_line(D_PE, D_PF, sw=2.0, color=RED),
+        mk_line(D_PF, D_PG, sw=2.0, color=RED),
+        mk_line(D_PG, D_PD, sw=2.0, color=RED),
+        mk_line(D_PD, D_PC, sw=2.0, color=RED),
+        mk_line(D_PB, D_PC, sw=2.0, color=RED),
+        mk_line(D_PC4, D_PE4, sw=2.0, color=RED),
+        mk_line(D_PC4, D_PB4, sw=2.0, color=RED),
+        mk_line(D_PE4, D_PD4, sw=2.0, color=RED),
+        mk_line(D_PD4, D_PF4, sw=2.0, color=RED),
+        mk_line(D_PF4, D_PG4, sw=2.0, color=RED),
+        mk_line(D_PG4, D_PH4, sw=2.0, color=RED),
+        mk_line(D_PH4, D_PF3, sw=2.0, color=RED),
+        mk_line(D_PF3, D_PE3, sw=2.0, color=RED),
+        mk_line(D_PE3, D_PC3, sw=2.0, color=RED),
+        mk_line(D_PG3, D_PH3, sw=2.0, color=RED),
+        mk_line(D_PH3, D_PI3, sw=2.0, color=RED),
+        mk_line(D_PI3, D_PJ3, sw=2.0, color=RED),
+        mk_line(D_PJ3, D_PK3, sw=2.0, color=RED),
+        mk_line(D_PK3, D_PL3, sw=2.0, color=RED),
+        mk_line(D_PL3, D_PM3, sw=2.0, color=RED),
+        mk_line(D_PM3, D_PN3, sw=2.0, color=RED),
+        mk_line(D_PN3, D_PO3, sw=2.0, color=RED),
+        mk_line(D_PO3, D_PP3, sw=2.0, color=RED),
+        mk_line(D_PP3, D_PQ3, sw=2.0, color=RED),
+        mk_line(D_PQ3, D_PR3, sw=2.0, color=RED),
+        mk_line(D_PR3, D_PS3, sw=2.0, color=RED),
+        mk_line(D_PS3, D_PT3, sw=2.0, color=RED),
+        mk_line(D_PT3, D_PU3, sw=2.0, color=RED),
+        mk_line(D_PU3, D_PV3, sw=2.0, color=RED),
+        mk_line(D_PV3, D_PW3, sw=2.0, color=RED),
+        mk_line(D_PW3, D_PZ3, sw=2.0, color=RED),
+        mk_line(D_PZ3, D_PA4, sw=2.0, color=RED),
+        mk_line(D_PA4, D_PB4, sw=2.0, color=RED),
+    )
+    dual_red = VGroup(
+        mk_line(D_PD3, D_PC3, sw=2.0, color=TEAL),
+        mk_line(D_PF, D_PC4, sw=2.0, color=TEAL),
+        mk_line(D_PE3, D_PG3, sw=2.0, color=TEAL),
+        mk_line(D_PM3, D_PT2, sw=2.0, color=TEAL),
+        mk_line(D_PT3, D_PM2, sw=2.0, color=TEAL),
+    )
+    dual_dots = VGroup(
+        mk_dot(D_PA, r=0.035),
+        mk_dot(D_PA3, r=0.035),
+        mk_dot(D_PA4, r=0.035),
+        mk_dot(D_PB, r=0.035),
+        mk_dot(D_PB3, r=0.035),
+        mk_dot(D_PB4, r=0.035),
+        mk_dot(D_PC, r=0.035),
+        mk_dot(D_PC3, r=0.035),
+        mk_dot(D_PC4, r=0.035),
+        mk_dot(D_PD, r=0.035),
+        mk_dot(D_PD3, r=0.035),
+        mk_dot(D_PD4, r=0.035),
+        mk_dot(D_PE, r=0.035),
+        mk_dot(D_PE3, r=0.035),
+        mk_dot(D_PE4, r=0.035),
+        mk_dot(D_PF, r=0.035),
+        mk_dot(D_PF3, r=0.035),
+        mk_dot(D_PF4, r=0.035),
+        mk_dot(D_PG, r=0.035),
+        mk_dot(D_PG3, r=0.035),
+        mk_dot(D_PG4, r=0.035),
+        mk_dot(D_PH, r=0.035),
+        mk_dot(D_PH3, r=0.035),
+        mk_dot(D_PH4, r=0.035),
+        mk_dot(D_PI2, r=0.035),
+        mk_dot(D_PI3, r=0.035),
+        mk_dot(D_PJ2, r=0.035),
+        mk_dot(D_PJ3, r=0.035),
+        mk_dot(D_PK2, r=0.035),
+        mk_dot(D_PK3, r=0.035),
+        mk_dot(D_PL2, r=0.035),
+        mk_dot(D_PL3, r=0.035),
+        mk_dot(D_PM2, r=0.035),
+        mk_dot(D_PM3, r=0.035),
+        mk_dot(D_PN2, r=0.035),
+        mk_dot(D_PN3, r=0.035),
+        mk_dot(D_PO2, r=0.035),
+        mk_dot(D_PO3, r=0.035),
+        mk_dot(D_PP2, r=0.035),
+        mk_dot(D_PP3, r=0.035),
+        mk_dot(D_PQ2, r=0.035),
+        mk_dot(D_PQ3, r=0.035),
+        mk_dot(D_PR2, r=0.035),
+        mk_dot(D_PR3, r=0.035),
+        mk_dot(D_PS2, r=0.035),
+        mk_dot(D_PS3, r=0.035),
+        mk_dot(D_PT2, r=0.035),
+        mk_dot(D_PT3, r=0.035),
+        mk_dot(D_PU2, r=0.035),
+        mk_dot(D_PU3, r=0.035),
+        mk_dot(D_PV2, r=0.035),
+        mk_dot(D_PV3, r=0.035),
+        mk_dot(D_PW2, r=0.035),
+        mk_dot(D_PW3, r=0.035),
+        mk_dot(D_PZ2, r=0.035),
+        mk_dot(D_PZ3, r=0.035),
     )
 
-    legend_forced = Text("── diagonales forzadas", font_size=16, color=YELLOW)
-    legend_other  = Text("╌╌ otras diagonales",    font_size=16, color=WHITE)
-    legend = VGroup(legend_forced, legend_other).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
-    legend.to_corner(DOWN + RIGHT, buff=0.4)
+    scene.play(FadeIn(dual_dots), Create(dual_teal), Create(dual_red), run_time=2.0)
 
-    scene.play(Create(forced))
-    scene.play(Create(other_diags))
-    scene.play(FadeIn(legend))
+    leg_h = VGroup(
+        Line(ORIGIN, RIGHT*0.4, color=RED, stroke_width=3),
+        Text('camino hamiltoniano', font_size=12, color=TEAL),
+    ).arrange(RIGHT, buff=0.1)
+    leg_nh = VGroup(
+        Line(ORIGIN, RIGHT*0.4, color=TEAL, stroke_width=2),
+        Text('fuera del camino', font_size=12, color=RED),
+    ).arrange(RIGHT, buff=0.1)
+    legend2 = VGroup(leg_h, leg_nh).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
+    legend2.next_to(legend, UP, aligned_edge=RIGHT, buff=0.15)
+    scene.play(FadeIn(legend2), run_time=0.5)
     scene.next_slide()
 
     return {
-        "heading":  heading,
-        "all_objs": None,
+        'heading': heading,
+        'all_objs': None,
     }
 
 
@@ -2383,7 +2919,7 @@ def _():
     import inspect
     import textwrap
 
-    _slide_fns = [title_slide, holes_slide, paper_slide]
+    _slide_fns = [title_slide, holes_slide, paper_slide, example_paper]
 
     _header = """\
     # -*- coding: utf-8 -*-
@@ -2411,6 +2947,8 @@ def _():
         "        ctx = holes_slide(self, ctx)\n"
         "        self.next_slide()\n"
         "        ctx = paper_slide(self, ctx)\n"
+        "        self.next_slide()\n"
+        "        ctx = example_paper(self, ctx)\n"
         "        self.next_slide()\n"
     )
 
