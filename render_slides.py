@@ -225,15 +225,15 @@ def paper_slide(scene, ctx):
     def pt(gx, gy):
         return np.array([(gx - 30) * 0.17, (gy - 22) * 0.17, 0.0])
 
-    PA  = pt(25, 40)
-    PB  = pt(35, 40)
-    PC  = pt(55, 10)
-    PD  = pt(50,  5)
-    PE  = pt(10,  5)
-    PF  = pt( 5, 10)
-    Pc  = pt(30, 25)
-    Pa  = pt(25, 15)
-    Pb  = pt(35, 15)
+    PA = pt(25, 40)
+    PB = pt(35, 40)
+    PC = pt(55, 10)
+    PD = pt(50,  5)
+    PE = pt(10,  5)
+    PF = pt( 5, 10)
+    Pc = pt(30, 25)
+    Pa = pt(25, 15)
+    Pb = pt(35, 15)
 
     def mk_dot(pos, color=WHITE):
         return Dot(pos, radius=0.08, color=color).set_z_index(4)
@@ -280,7 +280,7 @@ def paper_slide(scene, ctx):
         scene.play(*[FadeOut(m) for m in prev], run_time=0.6)
 
     heading = Text(
-        'Teorema 4.1 — Caso 2: C = 4',
+        'Teorema 4.1 — Caso 3: B = 4',
         font_size=HEAD_SZ, color=WHITE,
     ).to_corner(UP + LEFT, buff=0.35)
     scene.play(Write(heading))
@@ -316,33 +316,33 @@ def paper_slide(scene, ctx):
     scene.next_slide()
 
     # ════════════════════════════════════════════════════════════════════════
-    # SLIDE 1 — Asignación: a=1, b=2, c=3, C=4
+    # SLIDE 1 — Asignación: a=1, b=2, c=3, B=4
     # ════════════════════════════════════════════════════════════════════════
     scene.play(FadeOut(sub0), run_time=0.3)
-    sub1 = Text('Asignación: a=1, b=2, c=3, C=4',
+    sub1 = Text('Asignación: a=1, b=2, c=3, B=4',
                 font_size=SUB_SZ, color=GRAY_B)
     sub1.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
     scene.play(FadeIn(sub1), run_time=0.3)
 
-    seg_l = mk_seg(PC, Pb)
-    seg_m = mk_seg(PC, Pc)
+    seg_l = mk_seg(PB, Pc)
+    seg_m = mk_seg(PB, Pb)
     scene.play(Create(seg_l), Create(seg_m), run_time=0.6)
 
     num1 = mk_num('1', Pa, direction=DOWN+LEFT, buff=0.20, color=YELLOW)
     num2 = mk_num('2', Pb, direction=DOWN+RIGHT,buff=0.20, color=YELLOW)
     num3 = mk_num('3', Pc, direction=UP,        buff=0.20, color=YELLOW)
-    num4 = mk_num('4', PC, direction=RIGHT,     buff=0.22, color=ORANGE)
+    num4 = mk_num('4', PB, direction=UP+RIGHT,  buff=0.20, color=ORANGE)
 
     scene.play(
         FadeIn(num1), FadeOut(lbl_a),
         FadeIn(num2), FadeOut(lbl_b),
         FadeIn(num3), FadeOut(lbl_c),
-        FadeIn(num4), FadeOut(lbl_C),
+        FadeIn(num4), FadeOut(lbl_B),
         run_time=0.6,
     )
 
     note1 = Text(
-        'C=4 es el primer punto del hull exterior en la secuencia.',
+        'B=4 es el primer punto del hull exterior en la secuencia.',
         font_size=NOTE_SZ, color=GRAY_B,
     ).to_corner(DOWN + LEFT, buff=0.35)
     scene.play(FadeIn(note1), run_time=0.4)
@@ -351,7 +351,8 @@ def paper_slide(scene, ctx):
 
     # ════════════════════════════════════════════════════════════════════════
     # SLIDE 2 — ¿Por qué F no puede ser el punto 0?
-    # Polígono: F–E–D–C(4)–b(2)
+    # Segs: Four–F(n), F–Three(p)
+    # Polígono: A–F–Four(B)
     # ════════════════════════════════════════════════════════════════════════
     scene.play(FadeOut(sub1), FadeOut(note1), run_time=0.3)
     sub2 = Text('¿Por qué F no puede ser el punto 0?',
@@ -359,29 +360,29 @@ def paper_slide(scene, ctx):
     sub2.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
     scene.play(FadeIn(sub2), run_time=0.3)
 
-    dash_fa = mk_dash(PF, Pa)
-    dash_fb = mk_dash(PF, Pb)
+    num0_f = mk_num('0', PF, direction=LEFT, buff=0.20, color=GREEN)
+    scene.play(FadeIn(num0_f), FadeOut(lbl_F), run_time=0.5)
 
-    poly2 = mk_poly([PF, PE, PD, PC, Pb])
+    seg_n2 = mk_seg(PB, PF, color=WHITE, sw=2.5)
+    seg_p2 = mk_seg(PF, Pc, color=WHITE, sw=2.5)
+    poly2  = mk_poly([PA, PF, PB])
     seg2_blue = VGroup(
-        mk_seg(PF, PE, color=BLUE_D, sw=2.5),
-        mk_seg(PE, PD, color=BLUE_D, sw=2.5),
-        mk_seg(PD, PC, color=BLUE_D, sw=2.5),
-        mk_seg(PC, Pb, color=BLUE_D, sw=2.5),
-        mk_seg(Pb, PF, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PF, color=BLUE_D, sw=2.5),
+        mk_seg(PF, PB, color=BLUE_D, sw=2.5),
+        mk_seg(PB, PA, color=BLUE_D, sw=2.5),
     )
 
-    scene.play(Create(dash_fa), Create(dash_fb), run_time=0.7)
+    scene.play(Create(seg_n2), Create(seg_p2), run_time=0.6)
     note2a = Text(
-        'Si F = 0, debe formar triángulo (0,1,2) con a y b.',
+        'Si F=0, debe formar triángulo (0,1,2) con a y b.',
         font_size=NOTE_SZ, color=GRAY_B,
     ).to_corner(DOWN + LEFT, buff=0.55)
     note2b = Text(
-        '→ La región (F, E, D, C, b) quedaría sin cubrir.  ✗',
+        '→ La región (A, F, B) no puede cubrirse.  ✗',
         font_size=NOTE_SZ, color=RED,
     ).next_to(note2a, DOWN, aligned_edge=LEFT, buff=0.08)
     scene.play(FadeIn(note2a), run_time=0.4)
-    scene.play(FadeIn(poly2), run_time=0.5)
+    scene.play(FadeIn(poly2),  run_time=0.5)
     scene.play(Create(seg2_blue), run_time=0.6)
     scene.play(FadeIn(note2b), run_time=0.4)
 
@@ -389,13 +390,15 @@ def paper_slide(scene, ctx):
 
     # ════════════════════════════════════════════════════════════════════════
     # SLIDE 3 — ¿Por qué E no puede ser el punto 0?
-    # Polígono: E–D–C(4)–b(2)
+    # Segs: Four–E(n), E–Three(p)
+    # Polígono: Four(B)–A–F–E
     # ════════════════════════════════════════════════════════════════════════
     scene.play(
         FadeOut(sub2),
-        FadeOut(dash_fa), FadeOut(dash_fb),
-        FadeOut(poly2),   FadeOut(seg2_blue),
-        FadeOut(note2a),  FadeOut(note2b),
+        FadeOut(num0_f),
+        FadeOut(seg_n2), FadeOut(seg_p2),
+        FadeOut(poly2),  FadeOut(seg2_blue),
+        FadeOut(note2a), FadeOut(note2b),
         run_time=0.4,
     )
     sub3 = Text('¿Por qué E no puede ser el punto 0?',
@@ -403,24 +406,29 @@ def paper_slide(scene, ctx):
     sub3.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
     scene.play(FadeIn(sub3), run_time=0.3)
 
-    dash_ea = mk_dash(PE, Pa)
-    dash_eb = mk_dash(PE, Pb)
+    num0_e = mk_num('0', PE, direction=DOWN, buff=0.20, color=GREEN)
+    scene.play(FadeIn(num0_e), FadeOut(lbl_E), run_time=0.5)
 
-    poly3 = mk_poly([PE, PD, PC, Pb])
+    # F vuelve a su label original
+    scene.play(FadeIn(lbl_F), run_time=0.3)
+
+    seg_n3 = mk_seg(PB, PE, color=WHITE, sw=2.5)
+    seg_p3 = mk_seg(PE, Pc, color=WHITE, sw=2.5)
+    poly3  = mk_poly([PB, PA, PF, PE])
     seg3_blue = VGroup(
-        mk_seg(PE, PD, color=BLUE_D, sw=2.5),
-        mk_seg(PD, PC, color=BLUE_D, sw=2.5),
-        mk_seg(PC, Pb, color=BLUE_D, sw=2.5),
-        mk_seg(Pb, PE, color=BLUE_D, sw=2.5),
+        mk_seg(PB, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PF, color=BLUE_D, sw=2.5),
+        mk_seg(PF, PE, color=BLUE_D, sw=2.5),
+        mk_seg(PE, PB, color=BLUE_D, sw=2.5),
     )
 
-    scene.play(Create(dash_ea), Create(dash_eb), run_time=0.7)
+    scene.play(Create(seg_n3), Create(seg_p3), run_time=0.6)
     note3a = Text(
-        'Si E = 0, debe formar triángulo (0,1,2) con a y b.',
+        'Si E=0, debe formar triángulo (0,1,2) con a y b.',
         font_size=NOTE_SZ, color=GRAY_B,
     ).to_corner(DOWN + LEFT, buff=0.55)
     note3b = Text(
-        '→ La región (E, D, C, b) quedaría sin cubrir.  ✗',
+        '→ La región (B, A, F, E) no puede cubrirse.  ✗',
         font_size=NOTE_SZ, color=RED,
     ).next_to(note3a, DOWN, aligned_edge=LEFT, buff=0.08)
     scene.play(FadeIn(note3a), run_time=0.4)
@@ -431,172 +439,119 @@ def paper_slide(scene, ctx):
     scene.next_slide()
 
     # ════════════════════════════════════════════════════════════════════════
-    # SLIDE 4 — Candidatos para el punto 5: A y B
-    # Dashed C–a permanece
+    # SLIDE 4 — A=5 no puede ser el punto 5
+    # Seg: A–Three(n)
+    # Polígono t1: B–A–F,  Polígono t2: B–A–E
     # ════════════════════════════════════════════════════════════════════════
     scene.play(
         FadeOut(sub3),
-        FadeOut(dash_ea), FadeOut(dash_eb),
-        FadeOut(poly3),   FadeOut(seg3_blue),
-        FadeOut(note3a),  FadeOut(note3b),
+        FadeOut(num0_e),
+        FadeOut(seg_n3), FadeOut(seg_p3),
+        FadeOut(poly3),  FadeOut(seg3_blue),
+        FadeOut(note3a), FadeOut(note3b),
         run_time=0.4,
     )
-    sub4 = Text('Candidatos para el punto 5',
+    sub4 = Text('¿Por qué A no puede ser el punto 5?',
                 font_size=SUB_SZ, color=GRAY_B)
     sub4.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
     scene.play(FadeIn(sub4), run_time=0.3)
 
-    dash_c_a = mk_dash(PC, Pa)   # C–a, permanece hasta el final
-    scene.play(Create(dash_c_a), run_time=0.5)
-
-    lbl_fc1 = mk_lbl('FiveCand₁', PB, direction=UP+RIGHT, buff=0.10, color=ORANGE)
-    lbl_fc2 = mk_lbl('FiveCand₂', PA, direction=UP+LEFT,  buff=0.10, color=ORANGE)
-
+    # E y F recuperan sus labels; A toma el número 5
+    num5_a = mk_num('5', PA, direction=UP+LEFT, buff=0.20, color=GREEN)
+    num0_d = mk_num('0', PD, direction=DOWN,    buff=0.20, color=GREEN)  # D es el candidato 0
     scene.play(
-        FadeIn(lbl_fc1), FadeOut(lbl_B),
-        FadeIn(lbl_fc2), FadeOut(lbl_A),
+        FadeIn(num5_a), FadeOut(lbl_A),
+        FadeIn(num0_d), FadeOut(lbl_D),
+        FadeIn(lbl_E),
         run_time=0.5,
     )
 
-    note4 = Text(
-        'Candidatos a 5: FiveCand₁ (B), FiveCand₂ (A).',
-        font_size=NOTE_SZ, color=ORANGE,
-    ).to_corner(DOWN + LEFT, buff=0.45)
-    note4b = Text(
-        'Deben formar triángulo (2,4,5) con b y C.',
+    seg_n4 = mk_seg(PA, Pc, color=WHITE, sw=2.5)   # A–Three (n)
+
+    poly4_t1 = mk_poly([PB, PA, PF], color=BLUE_D, opacity=0.18)
+    seg4_t1  = VGroup(
+        mk_seg(PB, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PF, color=BLUE_D, sw=2.5),
+        mk_seg(PF, PB, color=BLUE_D, sw=2.5),
+    )
+    poly4_t2 = mk_poly([PB, PA, PE], color=BLUE_D, opacity=0.18)
+    seg4_t2  = VGroup(
+        mk_seg(PB, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PE, color=BLUE_D, sw=2.5),
+        mk_seg(PE, PB, color=BLUE_D, sw=2.5),
+    )
+
+    scene.play(Create(seg_n4), run_time=0.5)
+    scene.play(FadeIn(poly4_t1), FadeIn(poly4_t2), run_time=0.5)
+    scene.play(Create(seg4_t1), Create(seg4_t2),   run_time=0.6)
+
+    note4a = Text(
+        'Si A=5, las regiones (B,A,F) y (B,A,E) no pueden cubrirse.',
         font_size=NOTE_SZ, color=GRAY_B,
-    ).next_to(note4, DOWN, aligned_edge=LEFT, buff=0.08)
-    scene.play(FadeIn(note4), FadeIn(note4b), run_time=0.5)
+    ).to_corner(DOWN + LEFT, buff=0.55)
+    note4b = Text(
+        '→ Si B=4, no existe triangulación secuencial.  ✗',
+        font_size=NOTE_SZ, color=RED,
+    ).next_to(note4a, DOWN, aligned_edge=LEFT, buff=0.08)
+    scene.play(FadeIn(note4a), FadeIn(note4b), run_time=0.5)
 
     scene.next_slide()
 
     # ════════════════════════════════════════════════════════════════════════
-    # SLIDE 5 — FiveCand₁=B no puede ser 5
-    # Polígono: SixCand(A)–B(5)–C(4)
+    # SLIDE 5 — Step4: A=6, F=7, One=5
+    # Segs nuevos: B–One(m), A–One(n), F–One(p)
+    # Polígono: A–F–E
     # ════════════════════════════════════════════════════════════════════════
     scene.play(
         FadeOut(sub4),
-        FadeOut(note4), FadeOut(note4b),
+        FadeOut(seg_n4),
+        FadeOut(poly4_t1), FadeOut(poly4_t2),
+        FadeOut(seg4_t1),  FadeOut(seg4_t2),
+        FadeOut(note4a),   FadeOut(note4b),
+        FadeOut(num0_d),
         run_time=0.4,
     )
-    sub5 = Text('¿Por qué FiveCand₁=B no puede ser el punto 5?',
+    sub5 = Text('Continuación: A=6, F=7',
                 font_size=SUB_SZ, color=GRAY_B)
     sub5.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
     scene.play(FadeIn(sub5), run_time=0.3)
 
-    num5_b   = mk_num('5', PB, direction=UP+RIGHT, buff=0.20, color=GREEN)
-    lbl_sc_a = mk_lbl('SixCand', PA, direction=UP+LEFT, buff=0.10, color=ORANGE)
+    num6 = mk_num('6', PA, direction=UP+LEFT, buff=0.20, color=GREEN)
+    num7 = mk_num('7', PF, direction=LEFT,    buff=0.20, color=GREEN)
+
+    # num1 (=1 sobre a) sigue en escena; One toma también rol de 5
+    num5_one = mk_num('5', Pa, direction=DOWN, buff=0.20, color=GREEN)
 
     scene.play(
-        FadeIn(num5_b),   FadeOut(lbl_fc1),
-        FadeIn(lbl_sc_a), FadeOut(lbl_fc2),
+        FadeIn(num6),     FadeOut(num5_a),
+        FadeIn(num7),     FadeOut(lbl_F),
+        FadeIn(num5_one),
         run_time=0.5,
     )
 
-    seg_cb  = mk_seg(PC, PB, color=WHITE, sw=2.5)   # C–B (4→5)
-    seg_cb2 = mk_seg(Pc, PB, color=WHITE, sw=2.5)   # c–B (3→5)
+    seg_m5 = mk_seg(PB, Pa, color=WHITE, sw=2.5)   # B–One (m)
+    seg_n5 = mk_seg(PA, Pa, color=WHITE, sw=2.5)   # A–One (n)
+    seg_p5 = mk_seg(PF, Pa, color=WHITE, sw=2.5)   # F–One (p)
+    scene.play(Create(seg_m5), Create(seg_n5), Create(seg_p5), run_time=0.7)
 
-    # Polígono: SixCand(A)–B(5)–C(4)
-    poly5 = mk_poly([PA, PB, PC])
+    poly5  = mk_poly([PA, PF, PE])
     seg5_blue = VGroup(
-        mk_seg(PA, PB, color=BLUE_D, sw=2.5),
-        mk_seg(PB, PC, color=BLUE_D, sw=2.5),
-        mk_seg(PC, PA, color=BLUE_D, sw=2.5),
+        mk_seg(PA, PF, color=BLUE_D, sw=2.5),
+        mk_seg(PF, PE, color=BLUE_D, sw=2.5),
+        mk_seg(PE, PA, color=BLUE_D, sw=2.5),
     )
+    scene.play(FadeIn(poly5),     run_time=0.5)
+    scene.play(Create(seg5_blue), run_time=0.6)
 
-    scene.play(Create(seg_cb), Create(seg_cb2), run_time=0.6)
     note5a = Text(
-        'Si B=5, SixCand(A) debe cerrar con b y C.',
+        'La región (A, F, E) no puede cubrirse.',
         font_size=NOTE_SZ, color=GRAY_B,
     ).to_corner(DOWN + LEFT, buff=0.55)
     note5b = Text(
-        '→ La región (SixCand, B, C) no puede cubrirse.  ✗',
+        '→ La secuencia no puede completarse.  ✗',
         font_size=NOTE_SZ, color=RED,
     ).next_to(note5a, DOWN, aligned_edge=LEFT, buff=0.08)
-    scene.play(FadeIn(note5a), run_time=0.4)
-    scene.play(FadeIn(poly5), run_time=0.5)
-    scene.play(Create(seg5_blue), run_time=0.6)
-    scene.play(FadeIn(note5b), run_time=0.4)
-
-    scene.next_slide()
-
-    # ════════════════════════════════════════════════════════════════════════
-    # SLIDE 6 — FiveCand₂=A no puede ser 5
-    # Polígono: C(4)–A(5)–SixCand(B)
-    # ════════════════════════════════════════════════════════════════════════
-    scene.play(
-        FadeOut(sub5),
-        FadeOut(seg_cb),  FadeOut(seg_cb2),
-        FadeOut(poly5),   FadeOut(seg5_blue),
-        FadeOut(note5a),  FadeOut(note5b),
-        run_time=0.4,
-    )
-    sub6 = Text('¿Por qué FiveCand₂=A no puede ser el punto 5?',
-                font_size=SUB_SZ, color=GRAY_B)
-    sub6.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
-    scene.play(FadeIn(sub6), run_time=0.3)
-
-    num5_a   = mk_num('5', PA, direction=UP+LEFT,  buff=0.20, color=GREEN)
-    lbl_sc_b = mk_lbl('SixCand', PB, direction=UP+RIGHT, buff=0.10, color=ORANGE)
-
-    scene.play(
-        FadeIn(num5_a),   FadeOut(lbl_sc_a),
-        FadeIn(lbl_sc_b), FadeOut(num5_b),
-        run_time=0.5,
-    )
-
-    seg_ca  = mk_seg(PC, PA, color=WHITE, sw=2.5)   # C–A (4→5)
-    seg_ca2 = mk_seg(Pc, PA, color=WHITE, sw=2.5)   # c–A (3→5)
-
-    # Polígono: C(4)–A(5)–SixCand(B)
-    poly6 = mk_poly([PC, PA, PB])
-    seg6_blue = VGroup(
-        mk_seg(PC, PA, color=BLUE_D, sw=2.5),
-        mk_seg(PA, PB, color=BLUE_D, sw=2.5),
-        mk_seg(PB, PC, color=BLUE_D, sw=2.5),
-    )
-
-    scene.play(Create(seg_ca), Create(seg_ca2), run_time=0.6)
-    note6a = Text(
-        'Si A=5, la región (C, A, SixCand) no puede cubrirse.',
-        font_size=NOTE_SZ, color=GRAY_B,
-    ).to_corner(DOWN + LEFT, buff=0.55)
-    note6b = Text(
-        '→ Ningún candidato a 6 puede cerrar esta región.  ✗',
-        font_size=NOTE_SZ, color=RED,
-    ).next_to(note6a, DOWN, aligned_edge=LEFT, buff=0.08)
-    scene.play(FadeIn(note6a), run_time=0.4)
-    scene.play(FadeIn(poly6),  run_time=0.5)
-    scene.play(Create(seg6_blue), run_time=0.6)
-    scene.play(FadeIn(note6b), run_time=0.4)
-
-    scene.next_slide()
-
-    # ════════════════════════════════════════════════════════════════════════
-    # SLIDE 7 — Conclusión
-    # ════════════════════════════════════════════════════════════════════════
-    scene.play(
-        FadeOut(sub6),
-        FadeOut(seg_ca),  FadeOut(seg_ca2),
-        FadeOut(poly6),   FadeOut(seg6_blue),
-        FadeOut(note6a),  FadeOut(note6b),
-        FadeOut(num5_a),  FadeOut(lbl_sc_b),
-        run_time=0.4,
-    )
-    sub7 = Text('Conclusión Caso 2: ningún candidato a 5 es válido',
-                font_size=SUB_SZ, color=GRAY_B)
-    sub7.next_to(heading, DOWN, aligned_edge=LEFT, buff=0.10)
-    scene.play(FadeIn(sub7), run_time=0.3)
-
-    conc1 = Text(
-        'Los 2 candidatos a 5 (A, B) generan configuraciones imposibles.',
-        font_size=NOTE_SZ, color=WHITE,
-    ).to_corner(DOWN + LEFT, buff=0.65)
-    conc2 = Text(
-        '→ Si C=4, no existe triangulación secuencial.  ✗',
-        font_size=NOTE_SZ, color=RED,
-    ).next_to(conc1, DOWN, aligned_edge=LEFT, buff=0.08)
-    scene.play(FadeIn(conc1), FadeIn(conc2), run_time=0.6)
+    scene.play(FadeIn(note5a), FadeIn(note5b), run_time=0.5)
 
     scene.next_slide()
 
